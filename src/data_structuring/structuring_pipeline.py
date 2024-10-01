@@ -4,8 +4,9 @@ import sys
 
 """
 This class is meant for structuring data 
-1. join stat and trend features
-2. concat vertically different domain features
+1. Join stat and trend features
+2. Concat vertically different domain features
+3. Pivot tables based on pivot + value columns
 """
 class structuringPipeline:
     def __init__(self, features_tables_dict: dict):
@@ -82,6 +83,18 @@ class structuringPipeline:
             
         except Exception as e:
             raise CustomException(e, sys)
+        
+    def run_structuring_pipeline(self):
+        """
+        Run all the pipeline to structure data
+        1. Takes as input table features
+        2. Apply merge_and_concat_features() 
+        3. Apply pivot_table()
+        """
+        df = self.merge_and_concat_features()
+        pivoted_df =  self.pivot_table(df)
+        return pivoted_df
+
 
 
 
