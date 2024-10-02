@@ -3,14 +3,14 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def visualize_missing_values_per_column(df: DataFrame, figsize=(15,4)):
+def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
     """
     Visualize the number of missing values per columns.
     Takes as input a DataFrame or a sample of DataFrame
     """
     missing_values_per_column = pd.DataFrame (
-                                            { "column": df.isna().sum().index, 
-                                               "nbr_null_values": df.isna().sum().to_list() }
+                                            { "column": ((df.isna().sum()/len(df))*100).index, 
+                                               "nbr_null_values": ((df.isna().sum()/len(df))*100).to_list() }
                                                )
     
     df_sample = missing_values_per_column
