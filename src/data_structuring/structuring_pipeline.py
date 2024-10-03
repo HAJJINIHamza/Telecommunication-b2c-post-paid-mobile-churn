@@ -9,12 +9,15 @@ This class is meant for structuring data
 3. Pivot tables based on pivot + value columns
 """
 class structuringPipeline:
-    def __init__(self, features_tables_dict: dict):
+    def __init__(self, features_dict: dict):
         """
-        features_tables_dict : dictionnarie of features along with their names. key : feature name, value : feature
-                                example : {"data_stat_features": data_stat_features, "data_trend_features": data_trend_features}
+        Parameters :
+        ------------
+        features_dict : dictionnarie comming from get_tables_from_impala() in ingestion module: in the fromat {feature_domain: {feature_type: data}}
+                        example {"data":{"stat": data_stat_features, "trend": data_trend_features}}
+        
         """
-        self.features_tables_dict = features_tables_dict
+        self.features_dict = features_dict
 
     def merge_same_domain_features (self, domain_stat_features, domain_trend_features):
         """
@@ -44,7 +47,7 @@ class structuringPipeline:
         """
         try : 
             domain_features_splited = {}
-            for key, value in self.features_tables_dict.items():
+            for key, value in self.features_dict.items():
                 #Detect feature domain
                 domain = key.split("_")[0]
                 #if domain not already in dict create a new key equal to its value, else append value to its key
