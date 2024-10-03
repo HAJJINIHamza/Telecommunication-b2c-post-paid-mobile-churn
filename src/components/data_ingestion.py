@@ -2,6 +2,8 @@ import yaml
 import os 
 import sys
 from pyspark.sql import SparkSession
+import subprocess
+
 from src.exception import CustomException
 from src.logger import logging
 
@@ -15,6 +17,18 @@ os.environ["SPARK_HOME"] = config['spark_bcppmchurn']['spark_home']
 os.environ["PYSPARK_PYTHON"] = config['spark_bcppmchurn']['python_path']
 os.environ["PYSPARK_DRIVER_PYTHON"] = config['spark_bcppmchurn']['python_path']
 
+def get_kinit():
+    try:
+        os.chdir("..")
+        print(f"Current working directory : {os.getcwd()} ")
+        command = ["kinit", "hamza_hajjini", "-kt", "hamza_hajjini.keytab"]
+        subprocess.run(command, check=True )
+        os.chdir("bcppmchurn")
+        print(f"Current working directory : {os.getcwd()} ")
+        print (f"Obtained kerberos ticket succeffully")
+    except Exception as e:
+        print ("Couldn't obtain kerberos ticket")
+        raise CustomException(e, sys)
 
 def get_spark_session(app_name = config['spark_bcppmchurn']['app_name']):
     try:
@@ -42,6 +56,9 @@ def get_tables_from_impala(domains:list, feature_types:list):
     features_types : either "stat" or "trend"
     """
     #Initiate a spark session
+    print("Getting Kerberos ticket .............................................................................")
+    logging.info ("Getting Kerberos ticket")
+    get_kinit()
     print ("Initiating spark session ............................................................................")
     logging.info("Initiate spark session")
     spark = get_spark_session()
