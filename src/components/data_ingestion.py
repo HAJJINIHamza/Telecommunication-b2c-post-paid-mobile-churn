@@ -1,8 +1,9 @@
 import yaml
 import os 
+import sys
 from pyspark.sql import SparkSession
 from src.exception import CustomException
-
+from src.logger import logging
 
 #Load spark config yaml file
 config_path = "sparkConfig.yaml"
@@ -29,7 +30,7 @@ def get_spark_session(app_name = config['spark_bcppmchurn']['app_name']):
             .config("spark.yarn.queue", config['spark_bcppmchurn']['queue']) \
             .getOrCreate()
     except Exception as e:
-        raise customException(e, sys)
+        raise CustomException(e, sys)
         
         
 def get_tables_from_impala(domains:list, feature_types:list):
@@ -42,6 +43,7 @@ def get_tables_from_impala(domains:list, feature_types:list):
     """
     #Initiate a spark session
     print ("Initiating spark session ............................................................................")
+    logging.info("Initiate spark session")
     spark = get_spark_session()
     
     #Feature tables names 
@@ -60,12 +62,15 @@ def get_tables_from_impala(domains:list, feature_types:list):
     #loop over domains and feature_types, get table_name, create a query and load tables
     table_names = []
     feature_dict = {}
+    logging.info("Starting ingestion")
     for domain in domains:
         for feature_type in feature_types:
             table_name = feature_names_dict[domain][feature_type]
             QUERY = f"SELECT * FROM {table_name} LIMIT 100" #Should delete the LIMIT 100
             print (f"Loading {table_name} ..................................")
             data = spark.sql(QUERY).toPandas()
+            logging.info("table {table_name} succefully loaded")
             print (f"{table_name} shape is: {data.shape} ................................")
             feature_dict[domain] = {feature_type : data}
+    logging.info("Ingestion completed")
     return feature_dict

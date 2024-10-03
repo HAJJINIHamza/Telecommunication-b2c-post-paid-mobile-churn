@@ -1,6 +1,7 @@
 import pandas as pd
 from src.exception import CustomException
 import sys
+from src.logger import logging
 
 """
 This class is meant for structuring data 
@@ -90,8 +91,11 @@ class structuringPipeline:
         2. Apply merge_and_concat_features() 
         3. Apply pivot_table()
         """
+        logging.info("Starting data structuring")
         df = self.merge_and_concat_features()
+        logging.info("merging and concatinating feature tables completed succefully")
         pivoted_df =  self.pivot_table(df)
+        logging.info("Pivoting table completed succefully")
         return pivoted_df
     
     
