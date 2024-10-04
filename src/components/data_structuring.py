@@ -77,6 +77,7 @@ class structuringPipeline:
             #Create new colun "pivot_value"
             dataframe["pivot_value"] = dataframe["pivot"] + "_" + dataframe["value"]
             #Pivto column
+            dataframe.reset_index(inplace = True)
             pivoted_df = dataframe.pivot(index = "dn", columns= "pivot_value", values=df_numerical_columns )
             pivoted_df.columns = [f'{pivot_value}_{col}' for col, pivot_value in pivoted_df.columns]
             return pivoted_df
@@ -91,9 +92,10 @@ class structuringPipeline:
         2. Apply merge_and_concat_features() 
         3. Apply pivot_table()
         """
-        logging.info("Starting data structuring")
+        print("Starting data structuring")
         df = self.merge_and_concat_features()
         logging.info("merging and concatinating feature tables completed succefully")
+        print ("pivoting table")
         pivoted_df =  self.pivot_table(df)
         logging.info("Pivoting table completed succefully")
         return pivoted_df

@@ -20,12 +20,11 @@ os.environ["PYSPARK_DRIVER_PYTHON"] = config['spark_bcppmchurn']['python_path']
 def get_kinit():
     try:
         os.chdir("..")
-        print(f"Current working directory : {os.getcwd()} ")
         command = ["kinit", "hamza_hajjini", "-kt", "hamza_hajjini.keytab"]
         subprocess.run(command, check=True )
         os.chdir("bcppmchurn")
-        print(f"Current working directory : {os.getcwd()} ")
-        print (f"Obtained kerberos ticket succeffully")
+        print ("Obtained kerberos ticket succeffully")
+        logging.info ("Obtained kerberos ticket succeffully")
     except Exception as e:
         print ("Couldn't obtain kerberos ticket")
         raise CustomException(e, sys)
@@ -83,11 +82,15 @@ def get_tables_from_impala(domains:list, feature_types:list):
     for domain in domains:
         for feature_type in feature_types:
             table_name = feature_names_dict[domain][feature_type]
-            QUERY = f"SELECT * FROM {table_name} LIMIT 100" #Should delete the LIMIT 100
+            QUERY = f"SELECT * FROM {table_name} LIMIT 20000" #Should delete the LIMIT 100
             print (f"Loading {table_name} ..................................")
             data = spark.sql(QUERY).toPandas()
-            logging.info("table {table_name} succefully loaded")
+            logging.info(f"table {table_name} succefully loaded")
             print (f"{table_name} shape is: {data.shape} ................................")
-            feature_dict[domain] = {feature_type : data}
+            #Add data to feature_dict
+            if domain not in feature_dict.keys():
+                feature_dict[domain] = {feature_type : data}
+            else : 
+                feature_dict[domain][feature_type]=data
     logging.info("Ingestion completed")
     return feature_dict
