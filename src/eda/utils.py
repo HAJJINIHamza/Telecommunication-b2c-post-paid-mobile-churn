@@ -25,3 +25,32 @@ def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
     except Exception as e:
         raise CustomException(e, sys)
         
+
+        
+def get_df_columns_startswith_prefrix(df, prefix: str):
+    """
+    Retruns df columns that starts with a prefix
+    Meant for feature famillies like usagespecification_localdataservice
+    """
+    return [col for col in df.columns if col.startswith(prefix)]
+
+def get_df_columns_ends_with_sufix(df, sufix: str):
+    """
+    Retruns df columns that ends with a sufix 
+    Meant for features that occured in a certain month like : "nb_3m"
+    """
+    return [col for col in df.columns if col.endswith(sufix)]
+
+def get_list_of_df_columns_prefix(df):
+    """
+    Retruns a list of df columns prefixes to choose from 
+    in order to build feature famillies
+    """
+    try:
+        sufix = "nb_1m"
+        list_of_cols = get_df_columns_ends_with_sufix(df, sufix)
+        return [col.replace("_nb_1m", "") for col in list_of_cols]
+    except Exception as e:
+        raise CustomException(e, sys) 
+
+        

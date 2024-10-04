@@ -63,7 +63,7 @@ class structuringPipeline:
         except Exception as e:
             raise CustomException(e, sys)
         
-    def pivot_table(self, dataframe: pd.DataFrame):
+    def pivoting_table(self, dataframe: pd.DataFrame):
         """
         - Creates a new column "pivot_value" based on pivot + value
         - Pivotes the table based on created column "pivot_value"
@@ -78,7 +78,7 @@ class structuringPipeline:
             dataframe["pivot_value"] = dataframe["pivot"] + "_" + dataframe["value"]
             #Pivto column
             dataframe.reset_index(inplace = True)
-            pivoted_df = dataframe.pivot(index = "dn", columns= "pivot_value", values=df_numerical_columns )
+            pivoted_df = dataframe.pivot_table(index = "dn", columns= "pivot_value", values=df_numerical_columns, aggfunc = "sum" )
             pivoted_df.columns = [f'{pivot_value}_{col}' for col, pivot_value in pivoted_df.columns]
             return pivoted_df
             
@@ -96,8 +96,9 @@ class structuringPipeline:
         df = self.merge_and_concat_features()
         logging.info("merging and concatinating feature tables completed succefully")
         print ("pivoting table")
-        pivoted_df =  self.pivot_table(df)
+        pivoted_df =  self.pivoting_table(df)
         logging.info("Pivoting table completed succefully")
+        #Table cible 
         return pivoted_df
     
     

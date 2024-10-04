@@ -82,7 +82,7 @@ def get_tables_from_impala(domains:list, feature_types:list):
     for domain in domains:
         for feature_type in feature_types:
             table_name = feature_names_dict[domain][feature_type]
-            QUERY = f"SELECT * FROM {table_name} LIMIT 20000" #Should delete the LIMIT 100
+            QUERY = f"SELECT * FROM {table_name} LIMIT 50000" #Should delete the LIMIT 100
             print (f"Loading {table_name} ..................................")
             data = spark.sql(QUERY).toPandas()
             logging.info(f"table {table_name} succefully loaded")
