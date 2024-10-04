@@ -1,6 +1,7 @@
 import pandas as pd
 from src.exception import CustomException
 import sys
+from src.components.data_ingestion import get_churners_non_churners
 from src.logger import logging
 
 """
@@ -8,17 +9,20 @@ This class is meant for structuring data
 1. Join stat and trend features
 2. Concat vertically different domain features
 3. Pivot tables based on pivot + value columns
-"""
+""" 
+
 class structuringPipeline:
-    def __init__(self, features_dict: dict):
+    def __init__(self, features_dict: dict, churners_non_churners: pd.DataFrame):
         """
         Parameters :
         ------------
         features_dict : dictionnarie comming from get_tables_from_impala() in ingestion module: in the fromat {feature_domain: {feature_type: data}}
                         example {"data":{"stat": data_stat_features, "trend": data_trend_features}}
+        churners_non_churners : Target table
         
         """
         self.features_dict = features_dict
+        self.churners_non_churners = churners_non_churners
 
     def merge_same_domain_features(self, domain_stat_features, domain_trend_features):
         """
@@ -84,6 +88,18 @@ class structuringPipeline:
             
         except Exception as e:
             raise CustomException(e, sys)
+            
+    def merge_feature_tables_with_target_table(self, pivoted_df, churners_non_churners):
+        """
+        Merges target table left joind with feature tables (already pivoted on "dn" and "pivot_value")
+        """
+        
+        #Get churners
+        print ("Target table left joining feature tables pivoted")
+        df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = "left")
+        logging.info("Target table left join feature tables,(pivoted), succefully completed")
+        return df
+
         
     def run_structuring_pipeline(self):
         """
@@ -99,7 +115,9 @@ class structuringPipeline:
         pivoted_df =  self.pivoting_table(df)
         logging.info("Pivoting table completed succefully")
         #Table cible 
-        return pivoted_df
+        print ("Merging")
+        df = self.merge_feature_tables_with_target_table(pivoted_df, self.churners_non_churners)
+        return df
     
     
     ###END OF CLASS

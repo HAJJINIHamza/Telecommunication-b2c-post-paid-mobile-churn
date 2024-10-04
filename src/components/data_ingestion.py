@@ -45,8 +45,11 @@ def get_spark_session(app_name = config['spark_bcppmchurn']['app_name']):
     except Exception as e:
         raise CustomException(e, sys)
         
+
+
+    
         
-def get_tables_from_impala(domains:list, feature_types:list):
+def get_feature_tables_from_impala(domains:list, feature_types:list):
     """
     Loads data from impala and Returns a dataframe containing data from domains and feature_types
     parameters:
@@ -54,6 +57,7 @@ def get_tables_from_impala(domains:list, feature_types:list):
     domains: could be data, voice, complaints, ...
     features_types : either "stat" or "trend"
     """
+    
     #Initiate a spark session
     print("Getting Kerberos ticket .............................................................................")
     logging.info ("Getting Kerberos ticket")
@@ -94,3 +98,35 @@ def get_tables_from_impala(domains:list, feature_types:list):
                 feature_dict[domain][feature_type]=data
     logging.info("Ingestion completed")
     return feature_dict
+
+def get_churners_non_churners():
+    
+    """
+    Loads target table from impala : dev_bcppmchurn_target_table_pc3_20240607
+    """
+    
+    #Initiate a spark session
+    print("Getting Kerberos ticket .............................................................................")
+    logging.info ("Getting Kerberos ticket")
+    get_kinit()
+    print ("Initiating spark session ............................................................................")
+    logging.info("Initiate spark session")
+    spark = get_spark_session()
+    
+    try:
+        #Loading target table  
+        table_name = "tel_test_dtddds.dev_bcppmchurn_target_table_pc3_20240607"    #This table name could change in the future
+        QUERY = f"SELECT * FROM {table_name} LIMIT 100"    #TODO HAMZA: DELETE LIMIT 100
+        print(f"Loading target_table : {table_name}")
+        churners_non_churners = spark.sql(QUERY)
+        logging.info(f"Target table: {table_name} succefully loaded")
+        print (f"{table_name} shape is: {churners_non_churners.shape}")
+
+        churners_non_churners = churners_non_churners.toPandas()
+        churners_non_churners.rename(columns = {"mdn": "dn"}, inplace = True)
+        return churners_non_churners
+    
+    except Exception as e:
+        print ("Couldn't load target table")
+        raise CustomException(e, sys)
+
