@@ -49,13 +49,14 @@ def get_spark_session(app_name = config['spark_bcppmchurn']['app_name']):
 
     
         
-def get_feature_tables_from_impala(domains:list, feature_types:list):
+def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_interval: list):
     """
     Loads data from impala and Returns a dataframe containing data from domains and feature_types
     parameters:
     ----------
-    domains: could be data, voice, complaints, ...
+    domains: could be data, voice, complaints, payement.
     features_types : either "stat" or "trend"
+    dn_group_intervall : example [0, 10] -> get table where dn_group_id is between 0 and 10
     """
     
     #Initiate a spark session
@@ -73,11 +74,15 @@ def get_feature_tables_from_impala(domains:list, feature_types:list):
     voice_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_voice_trend_features"
     complaints_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_complaints_stat_features"
     complaints_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_complaints_trend_features"
+    payement_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_payment_stat_features"
+    payement_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_payment_trend_features"
     
     #Feature names dictinnarie
-    feature_names_dict = { "data": {"stat": data_stat_features_name, "trend": data_trend_features_name},
-                "voice": {"stat": voice_stat_features_name, "trend": voice_trend_features_name},
-                "complaints": {"stat": complaints_stat_features_name, "trend": complaints_trend_features_name}}
+    feature_names_dict = {"data": {"stat": data_stat_features_name, "trend": data_trend_features_name},
+                          "voice": {"stat": voice_stat_features_name, "trend": voice_trend_features_name},
+                          "complaints": {"stat": complaints_stat_features_name, "trend": complaints_trend_features_name},
+                          "payement": {"stat": payement_stat_features_name, "trend": payement_trend_features_name}
+                         }
                           
     #loop over domains and feature_types, get table_name, create a query and load tables
     table_names = []
@@ -86,7 +91,7 @@ def get_feature_tables_from_impala(domains:list, feature_types:list):
     for domain in domains:
         for feature_type in feature_types:
             table_name = feature_names_dict[domain][feature_type]
-            QUERY = f"SELECT * FROM {table_name}" #TODO HAMZA : Should delete the LIMIT 100
+            QUERY = f"SELECT * FROM {table_name} WHERE CAST(dn_group_id AS INTEGER) BETWEEN {dn_group_interval[0]} AND {dn_group_interval[1]}" 
             print (f"Loading {table_name} ..................................")
             data = spark.sql(QUERY).toPandas()
             logging.info(f"table {table_name} succefully loaded")
@@ -99,7 +104,7 @@ def get_feature_tables_from_impala(domains:list, feature_types:list):
     logging.info("Ingestion completed")
     return feature_dict
 
-def get_churners_non_churners():
+def get_churn_target():
     
     """
     Loads target table from impala : dev_bcppmchurn_target_table_pc3_20240607

@@ -1,7 +1,7 @@
 import pandas as pd
 from src.exception import CustomException
 import sys
-from src.components.data_ingestion import get_churners_non_churners
+from src.components.data_ingestion import get_churn_target
 from src.logger import logging
 
 """
