@@ -13,18 +13,19 @@ def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
     try:
         missing_values_per_column = pd.DataFrame (
                                                 { "column": ((df.isna().sum()/len(df))*100).index, 
-                                                "nbr_null_values": ((df.isna().sum()/len(df))*100).to_list() }
+                                                "prc_null_values": ((df.isna().sum()/len(df))*100).to_list() }
                                                 )
         
         df = missing_values_per_column
         plt.figure(figsize=figsize)
-        fig = sns.barplot(x= df.column, y=df.nbr_null_values)
-        fig.set_title("nbr of missing values per column")
+        fig = sns.barplot(x= df.column, y=df["prc_null_values"], color = "#FA5656")
+        fig.set_title("percentage of missing values per column")
         plt.xticks(rotation= 315, ha="left")
         plt.show()
     except Exception as e:
         raise CustomException(e, sys)
         
+
 
         
 def get_df_columns_startswith_prefrix(df, prefix: str):
@@ -52,5 +53,17 @@ def get_list_of_df_columns_prefix(df):
         return [col.replace("_nb_1m", "") for col in list_of_cols]
     except Exception as e:
         raise CustomException(e, sys) 
+        
+def get_columns_families(df):
+    """
+    Return dictionnarie where values are column familie name (prefix)
+    and values are df.columns that belongs to this familiy
+    """
+    #Get columns families by prefix
+    prefix_list = get_list_of_df_columns_prefix(df)
+    
+    #Get columns families
+    columns_families = {prefix: get_df_columns_startswith_prefrix(df, prefix) for prefix in prefix_list}
+    return columns_families
 
         

@@ -86,7 +86,7 @@ def get_feature_tables_from_impala(domains:list, feature_types:list):
     for domain in domains:
         for feature_type in feature_types:
             table_name = feature_names_dict[domain][feature_type]
-            QUERY = f"SELECT * FROM {table_name} LIMIT 50000" #Should delete the LIMIT 100
+            QUERY = f"SELECT * FROM {table_name}" #TODO HAMZA : Should delete the LIMIT 100
             print (f"Loading {table_name} ..................................")
             data = spark.sql(QUERY).toPandas()
             logging.info(f"table {table_name} succefully loaded")
@@ -116,13 +116,12 @@ def get_churners_non_churners():
     try:
         #Loading target table  
         table_name = "tel_test_dtddds.dev_bcppmchurn_target_table_pc3_20240607"    #This table name could change in the future
-        QUERY = f"SELECT * FROM {table_name} LIMIT 100"    #TODO HAMZA: DELETE LIMIT 100
+        QUERY = f"SELECT * FROM {table_name}"    #TODO HAMZA: DELETE LIMIT 100
         print(f"Loading target_table : {table_name}")
         churners_non_churners = spark.sql(QUERY)
         logging.info(f"Target table: {table_name} succefully loaded")
-        print (f"{table_name} shape is: {churners_non_churners.shape}")
-
         churners_non_churners = churners_non_churners.toPandas()
+        print (f"{table_name} shape is: {churners_non_churners.shape}")
         churners_non_churners.rename(columns = {"mdn": "dn"}, inplace = True)
         return churners_non_churners
     
