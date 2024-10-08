@@ -24,6 +24,21 @@ def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
         plt.show()
     except Exception as e:
         raise CustomException(e, sys)
+
+
+def vis_target_distribution(target, figsize=(18, 6)):
+    """
+    This function plot a cercle representing the distribution of the target feature
+    target:the target column, example: df["churn_segment"]
+    """
+    
+    #Get churn segments and thier percentages 
+    churn_segments = target.value_counts().index
+    percentages = [ (value/len(target))*100 for value in target.value_counts().to_list() ]
+    #Visualize percentages
+    fig, ax1 = plt.subplots(1, figsize=figsize)
+    ax1.pie(percentages, labels=churn_segments, autopct='%1.1f%%', startangle=140)
+    plt.show()
         
 
 class columnsFamilies:

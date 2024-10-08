@@ -45,8 +45,6 @@ def get_spark_session(app_name = config['spark_bcppmchurn']['app_name']):
     except Exception as e:
         raise CustomException(e, sys)
         
-
-
     
         
 def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_interval: list):
