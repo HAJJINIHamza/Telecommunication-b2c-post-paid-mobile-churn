@@ -4,14 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from src.exception import CustomException
 import sys
-<<<<<<< Updated upstream
-
-def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4), color = "#FA5656"):
-=======
-import random
 
 def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
->>>>>>> Stashed changes
     """
     Visualize the number of missing values per columns.
     Takes as input a DataFrame or a sample of DataFrame
@@ -21,15 +15,12 @@ def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
                                                 { "column": ((df.isna().sum()/len(df))*100).index, 
                                                 "prc_null_values": ((df.isna().sum()/len(df))*100).to_list() }
                                                 )
-<<<<<<< Updated upstream
-        
-=======
+
         list_of_colors = [   "blue", "green", "red", "cyan", "magenta", "yellow", "black", 
                             "orange", "purple", "brown", "pink", "gray", "olive", "lime", 
                             "teal", "navy", "gold", "indigo", "lightblue", "lightgreen"
                          ]
         color = random.choice(list_of_colors)
->>>>>>> Stashed changes
         df = missing_values_per_column
         plt.figure(figsize=figsize)
         fig = sns.barplot(x= df.column, y=df["prc_null_values"], color = color)
@@ -74,11 +65,7 @@ def vis_box_plots(df):
         #axes[i_column].set_title(f"{column} boxplot")
     #Remove any empty subplots                        
     if len(columns)%2 != 0:
-<<<<<<< Updated upstream
-        for j in range(len(sample_of_columns), len(axes)):
-=======
         for j in range(len(columns), len(axes)):
->>>>>>> Stashed changes
             fig.delaxes(axes[j])
     #Set title 
     fig.suptitle("Columns boxplot", fontsize=16, y = 1)
