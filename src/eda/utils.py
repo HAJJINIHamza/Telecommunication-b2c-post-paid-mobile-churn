@@ -20,6 +20,7 @@ def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
         plt.figure(figsize=figsize)
         fig = sns.barplot(x= df.column, y=df["prc_null_values"], color = "#FA5656")
         fig.set_title("percentage of missing values per column")
+        plt.ylim(0, 100)
         plt.xticks(rotation= 315, ha="left")
         plt.show()
     except Exception as e:
@@ -38,7 +39,46 @@ def vis_target_distribution(target, figsize=(18, 6)):
     #Visualize percentages
     fig, ax1 = plt.subplots(1, figsize=figsize)
     ax1.pie(percentages, labels=churn_segments, autopct='%1.1f%%', startangle=140)
+    plt.title("target distribution")
     plt.show()
+    
+
+def vis_box_plots(df):
+    """
+    Retruns box plots of df features for outliers exploration
+    """
+    columns = df.columns
+    n_rows = (len(columns)//2) + (len(columns)%2)
+    fig, axes= plt.subplots(nrows=n_rows, ncols=2, figsize=(20, 2*n_rows) )
+    #Add some pading between figues
+    plt.tight_layout(pad=4.0)
+    #flatten axes                        
+    axes = axes.flatten()                        
+    #Create plots
+    for i_column, column in enumerate(columns):
+        sns.boxplot(x= df[column], ax=axes[i_column], color="green" )
+        #axes[i_column].set_title(f"{column} boxplot")
+    #Remove any empty subplots                        
+    if len(columns)%2 != 0:
+        for j in range(len(sample_of_columns), len(axes)):
+            fig.delaxes(axes[j])
+    #Set title 
+    fig.suptitle("Columns boxplot", fontsize=16, y = 1)
+    plt.show()
+
+def get_churn_target_from_churn_segment(df):
+    """
+    Returns df with new column "churn" 0 if not churner else 1,
+    from churn_segment variable
+    """
+    target_list = []
+    for churn_segment in df["churn_segment"].to_list():
+        if churn_segment == "non_churners":
+            target_list.append(0)
+        else:
+            target_list.append(1)
+    df['churn'] = target_list
+    return df
         
 
 class columnsFamilies:
