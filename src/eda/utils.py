@@ -5,7 +5,7 @@ import seaborn as sns
 from src.exception import CustomException
 import sys
 
-def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
+def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4), color = "#FA5656"):
     """
     Visualize the number of missing values per columns.
     Takes as input a DataFrame or a sample of DataFrame
@@ -18,7 +18,7 @@ def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
         
         df = missing_values_per_column
         plt.figure(figsize=figsize)
-        fig = sns.barplot(x= df.column, y=df["prc_null_values"], color = "#FA5656")
+        fig = sns.barplot(x= df.column, y=df["prc_null_values"], color = color)
         fig.set_title("percentage of missing values per column")
         plt.ylim(0, 100)
         plt.xticks(rotation= 315, ha="left")
