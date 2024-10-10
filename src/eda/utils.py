@@ -71,6 +71,19 @@ def vis_box_plots(df):
     fig.suptitle("Columns boxplot", fontsize=16, y = 1)
     plt.show()
 
+    
+def vis_correlations_with_target(df, target_name="churn"):
+    """
+    Returns a heatmap representing correlations with target variable
+    """
+    correlation_matrix = df.corr()[[target_name]]
+    plt.figure(figsize=(23, 1))
+    fig = sns.heatmap(correlation_matrix.T, annot = True, fmt=".2f", cmap="Reds", cbar = True)
+    fig.set_title("correlations with target")
+    plt.xticks(rotation=315, ha="left")
+    plt.show()
+
+    
 def get_churn_target_from_churn_segment(df):
     """
     Returns df with new column "churn" 0 if not churner else 1,

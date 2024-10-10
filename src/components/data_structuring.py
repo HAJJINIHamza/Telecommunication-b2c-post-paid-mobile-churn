@@ -35,7 +35,7 @@ class structuringPipeline:
         """
         merged_features = pd.merge(domain_stat_features, domain_trend_features, on = ["dn", "pivot", "value", "dn_group_id"], how= "outer")
         #Add a column containing domain name (table name)
-        merged_features[domain]=domain
+        merged_features["domain"]=domain
         return merged_features
     
     def concat_different_domain_features(self, features_list: list):
@@ -60,7 +60,7 @@ class structuringPipeline:
                 if len(self.features_dict[domain]) == 2:
                     stat = self.features_dict[domain]["stat"]
                     trend = self.features_dict[domain]["trend"]
-                    domain_features.append(self.merge_same_domain_features(domian, stat, trend))
+                    domain_features.append(self.merge_same_domain_features(domain, stat, trend))
                 #If asked for stat or trend only, append to to domain_features directly
                 else:
                     feature_type = list (self.features_dict[domain].keys())[0]
@@ -82,10 +82,10 @@ class structuringPipeline:
             df_numerical_columns = [ column for column in df_numerical_columns if column not in ["dn", "dn_group_id"] ] #TODO: dn_group_id was deleted here, see later how to add to df 
 
             #Create new colun "pivot_value"
-            dataframe["pivot_value"] = dataframe["pivot"] + "_" + dataframe["value"]
+            dataframe["domain_pivot_value"] = dataframe["domain"] + "_" + dataframe["pivot"] + "_" + dataframe["value"]
             #Pivto column
             dataframe.reset_index(inplace = True)
-            pivoted_df = dataframe.pivot_table(index = "dn", columns= "pivot_value", values=df_numerical_columns, aggfunc = "sum" )
+            pivoted_df = dataframe.pivot_table(index = "dn", columns= "domain_pivot_value", values=df_numerical_columns, aggfunc = "sum" )
             pivoted_df.columns = [f'{pivot_value}_{col}' for col, pivot_value in pivoted_df.columns]
             return pivoted_df
             
