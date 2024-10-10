@@ -89,7 +89,7 @@ def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_in
     for domain in domains:
         for feature_type in feature_types:
             table_name = feature_names_dict[domain][feature_type]
-            QUERY = f"SELECT * FROM {table_name} WHERE CAST(dn_group_id AS INTEGER) BETWEEN {dn_group_interval[0]} AND {dn_group_interval[1]}" 
+            QUERY = f"SELECT * FROM {table_name} WHERE dn_group_id BETWEEN {dn_group_interval[0]} AND {dn_group_interval[1]}" 
             print (f"Loading {table_name} ..................................")
             data = spark.sql(QUERY).toPandas()
             logging.info(f"table {table_name} succefully loaded")

@@ -24,7 +24,7 @@ class structuringPipeline:
         self.features_dict = features_dict
         self.churners_non_churners = churners_non_churners
 
-    def merge_same_domain_features(self, domain_stat_features, domain_trend_features):
+    def merge_same_domain_features(self, domain:str, domain_stat_features, domain_trend_features):
         """
         Outer Join stat and trend features that belong to same domain based on "dn", "pivot", "value", "dn_group_id" 
 
@@ -33,7 +33,10 @@ class structuringPipeline:
         domain_stat_features  : example : data_stat_features
         domain_trend_features : example : data_trend_features
         """
-        return pd.merge(domain_stat_features, domain_trend_features, on = ["dn", "pivot", "value", "dn_group_id"], how= "outer")
+        merged_features = pd.merge(domain_stat_features, domain_trend_features, on = ["dn", "pivot", "value", "dn_group_id"], how= "outer")
+        #Add a column containing domain name (table name)
+        merged_features[domain]=domain
+        return merged_features
     
     def concat_different_domain_features(self, features_list: list):
         """
@@ -57,7 +60,7 @@ class structuringPipeline:
                 if len(self.features_dict[domain]) == 2:
                     stat = self.features_dict[domain]["stat"]
                     trend = self.features_dict[domain]["trend"]
-                    domain_features.append(self.merge_same_domain_features(stat, trend))
+                    domain_features.append(self.merge_same_domain_features(domian, stat, trend))
                 #If asked for stat or trend only, append to to domain_features directly
                 else:
                     feature_type = list (self.features_dict[domain].keys())[0]
