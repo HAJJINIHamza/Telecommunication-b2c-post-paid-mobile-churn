@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from src.exception import CustomException
 import sys
+import random
 
 def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
     """

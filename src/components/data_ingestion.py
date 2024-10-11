@@ -94,6 +94,9 @@ def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_in
             data = spark.sql(QUERY).toPandas()
             logging.info(f"table {table_name} succefully loaded")
             print (f"{table_name} shape is: {data.shape} ................................")
+            #insure dn is a string
+            data["dn"] = data["dn"].astype("string")
+            data["dn_group_id"] = data["dn_group_id"].astype("string")
             #Add data to feature_dict
             if domain not in feature_dict.keys():
                 feature_dict[domain] = {feature_type : data}
@@ -126,6 +129,7 @@ def get_churn_target():
         churners_non_churners = churners_non_churners.toPandas()
         print (f"{table_name} shape is: {churners_non_churners.shape}")
         churners_non_churners.rename(columns = {"mdn": "dn"}, inplace = True)
+        churners_non_churners["dn"] = churners_non_churners["dn"].astype("string")
         return churners_non_churners
     
     except Exception as e:

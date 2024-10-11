@@ -120,7 +120,7 @@ class structuringPipeline:
         #Table cible 
         print ("Merging")
         df = self.merge_feature_tables_with_target_table(pivoted_df, self.churners_non_churners)
-        return df
+        return df, pivoted_df
     
     
     ###END OF CLASS
