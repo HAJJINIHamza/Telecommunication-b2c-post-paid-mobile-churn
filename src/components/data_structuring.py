@@ -98,9 +98,9 @@ class structuringPipeline:
         """
         
         #Get churners
-        print ("Target table left joining feature tables pivoted")
+        print ("Joining pivoted table with target table")
         df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = "left")
-        logging.info("Target table left join feature tables,(pivoted), succefully completed")
+        logging.info("Joined pivoted table with target table successfully")
         return df
 
         
@@ -113,13 +113,17 @@ class structuringPipeline:
         """
         print("Starting data structuring")
         df = self.merge_and_concat_features()
-        logging.info("merging and concatinating feature tables completed succefully")
+        logging.info("merging and concatinating feature tables completed successfully")
         print ("pivoting table")
         pivoted_df =  self.pivoting_table(df)
-        logging.info("Pivoting table completed succefully")
+        logging.info("Pivoting table completed successfully")
         #Table cible 
-        print ("Merging")
+        print ("Joining pivoted table with target table")
         df = self.merge_feature_tables_with_target_table(pivoted_df, self.churners_non_churners)
+        #Droping duplicated dns in dataframe
+        print ("droping duplicated dns")
+        df.drop(df [df["dn"].duplicated()].index, inplace = True)
+        logging.info("Droped duplicated dns dn dataframe successfully")
         return df, pivoted_df
     
     
