@@ -182,6 +182,8 @@ class columnsFamilies:
         
         except Exception as e:
             raise CustomException(e, sys)
+    
+    #END OF CLASS
         
         
 
