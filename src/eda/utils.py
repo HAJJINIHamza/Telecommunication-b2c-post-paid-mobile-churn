@@ -98,6 +98,27 @@ def get_churn_target_from_churn_segment(df):
             target_list.append(1)
     df['churn'] = target_list
     return df
+
+def drop_df_null_columns(df, threshold = 99):
+    """
+    Drop columns that contains a percentage of null values that surpass thereshold from dataframe
+    Paramerters:
+    ------------
+    feature_names: list of features to look for null values in, and drop only null columns from this list
+    thereshold: is a percentage not a number
+    """
+    
+    df_missing_values_per_column = pd.DataFrame (
+                                        { "column": ((df.isna().sum()/len(df))*100).index, 
+                                        "prc_null_values": ((df.isna().sum()/len(df))*100).to_list() }
+                                        )
+    #Get list of null columns
+    null_columns_to_be_deleted = df_missing_values_per_column [df_missing_values_per_column['prc_null_values'] > threshold]['column'].to_list()
+    print (f"number of null columns in dataframe : {len(null_columns_to_be_deleted)}")
+    #Drop null columns from df
+    df.drop(null_columns_to_be_deleted, axis = "columns", inplace = True)
+    print (f"DataFrame new shape {df.shape}")
+    return df
         
 
 class columnsFamilies:
@@ -145,5 +166,8 @@ class columnsFamilies:
         
         except Exception as e:
             raise CustomException(e, sys)
+        
+        
+
 
         
