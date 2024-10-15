@@ -119,6 +119,22 @@ def drop_df_null_columns(df, threshold = 99):
     df.drop(null_columns_to_be_deleted, axis = "columns", inplace = True)
     print (f"DataFrame new shape {df.shape}")
     return df
+
+
+def vis_missing_values_heatmap(missing_values_matrix):
+    """
+    Plots a heatmap of missing values per columns and rows
+    Parameters:
+    -----------
+    missing_values_matrix: matrix of missing values (df.isna())
+    """
+    print("Missing values in white, other values in black")
+    plt.figure(figsize = (25, 13))
+    sns.heatmap(missing_values_matrix, annot = False)
+    plt.title ("Heatmap of missing values")
+    plt.ylabel("Row index")
+    plt.xticks(rotation = 315, ha="left")
+    plt.show()
         
 
 class columnsFamilies:
