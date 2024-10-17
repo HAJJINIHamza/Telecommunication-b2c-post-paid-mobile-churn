@@ -135,7 +135,22 @@ def vis_missing_values_heatmap(missing_values_matrix):
     plt.ylabel("Row index")
     plt.xticks(rotation = 315, ha="left")
     plt.show()
-        
+
+def vis_tsne_data_distribution(data, target, perplexity = 30):
+    """
+    Applyes TSNE on data and plots data distribution labeled by target
+    """
+    print ("Applying tsne on data")
+    data_tsne = TSNE(n_components = 2, perplexity = perplexity).fit_transform(data)
+    data_tsne = pd.DataFrame(data_tsne, columns = ["x1", "x2"])
+    data_tsne["churn"] = target
+    #Plot
+    print ("Ploting data distribution")
+    plt.figure(figsize=(15, 10))
+    sns.scatterplot(data = data_tsne, x="x1", y="x2", hue = "churn")
+    plt.title(f"Perplexity {perplexity} TSNE data distribution")
+    plt.show()
+    
 
 class columnsFamilies:
     
