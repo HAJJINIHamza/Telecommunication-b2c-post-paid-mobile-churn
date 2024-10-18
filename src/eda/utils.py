@@ -151,6 +151,33 @@ def vis_tsne_data_distribution(data, target, perplexity = 30):
     plt.title(f"Perplexity {perplexity} TSNE data distribution")
     plt.show()
     
+    
+def vis_feature_importance(columns_names, importance, columns_families):
+    """
+    Returns a plot of feature importance per feature, by feature families
+    Parameters:
+    -----------
+    columns_names: list of columns names that were given to model to extract the importances, same shape as importance
+    importance : list of feature importances extracted from the mode
+    columns_families : dictionnary of columns families, where key is family name and value is list of columns in this family
+    
+    """
+    #Transform feature importance to dataframe
+    feature_importance = {"column": columns_names, "importance" : importance }
+    feature_importance = pd.DataFrame(feature_importance)
+    feature_importance = feature_importance.T
+    feature_importance.columns = feature_importance.iloc[0]
+    feature_importance.drop("column", inplace = True)
+    #Plot
+    for key, value in columns_families.items():
+        plt.figure(figsize = (22, 8))
+        sns.barplot(x = value, y = feature_importance[value].values.tolist()[0])
+        plt.ylabel("feature importance")
+        plt.title(f"Family : {key}, Feature importance")
+        plt.xticks(rotation= 315, ha="left")
+        plt.ylim(0, importance.max()+0.002)
+        plt.show()
+    
 
 class columnsFamilies:
     
