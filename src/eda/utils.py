@@ -177,6 +177,31 @@ def vis_feature_importance(columns_names, importance, columns_families):
         plt.xticks(rotation= 315, ha="left")
         plt.ylim(0, importance.max()+0.002)
         plt.show()
+
+
+def vis_feature_densities(df, target):
+    """
+    Returns a plot of df feature densities labeled with target
+    Parameters:
+    -----------
+    df: DataFrame 
+    target : DF Column, not column name. Example (df["churn"])
+    """
+    columns = df.columns
+    nrows = len(columns)//3 + len(columns)%3
+
+    fig, axes = plt.subplots(nrows= nrows, ncols=3, figsize=(5*3, 3*nrows))
+    plt.tight_layout()
+    axes = axes.flatten()
+    for i_column, column in enumerate(columns):
+        #sns.displot(df_train, x = column, hue="churn", kind="kde", multiple="stack", height= 4, aspect=1)
+        sns.kdeplot(x = df[column], hue=target,ax = axes[i_column], multiple="stack")
+    if len(columns)%3 != 0:
+        for j in range(len(columns), len(axes)):
+            fig.delaxes(axes[j])
+
+    fig.suptitle("Feature density")
+    plt.show()
     
 
 class columnsFamilies:
