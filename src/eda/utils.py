@@ -1,8 +1,9 @@
 import pandas as pd
+import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 from src.exception import CustomException
 import sys
@@ -206,24 +207,23 @@ def vis_feature_densities(df, target):
     plt.show()
 
 
-def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicted):
+def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicted, model_name=""):
     """
     Reports a model performance : accuracy, precision, recall and f1 score
     """
-    print ("Performance on training data   ")
-    print ("-------------------------------")
-    print ("Train accuracy :", accuracy_score(y_train, y_train_predicted) )
-    print ("Train precision :", precision_score(y_train, y_train_predicted))
-    print ("Train recall :", recall_score(y_train, y_train_predicted))
-    print ("Train f1 score :", f1_score(y_train, y_train_predicted))
-    print ("-------------------------------")
-    print ("Performance on test data")
-    print ("-------------------------------")
-    print ("test accuracy :", accuracy_score(y_test, y_test_predicted))
-    print ("test precision :", precision_score(y_test, y_test_predicted))
-    print ("test recall :", recall_score(y_test, y_test_predicted))
-    print ("test f1 score :", f1_score(y_test, y_test_predicted))
-    print ("-------------------------------")
+    print ("                  train set      ||     test set")
+    print ("------------------------------------------------------------")
+    print (f"{model_name} accuracy    :", accuracy_score(y_train, y_train_predicted), " || ", accuracy_score(y_test, y_test_predicted) )
+    print (f"{model_name} precision   :", precision_score(y_train, y_train_predicted)," || ", precision_score(y_test, y_test_predicted))
+    print (f"{model_name} recall      :", recall_score(y_train, y_train_predicted),   " || ", recall_score(y_test, y_test_predicted))
+    print (f"{model_name} f1 score    :", f1_score(y_train, y_train_predicted),       " || ", f1_score(y_test, y_test_predicted))
+    print (f"-------------------------------------------------------------")
+
+    matrice_confusion = confusion_matrix(y_test, y_test_predicted)
+    plt.figure(figsize=(4, 3))
+    sns.heatmap(matrice_confusion/np.sum(matrice_confusion), annot=True, cmap="Blues", fmt=".2%")
+    plt.title(f"Confusion matrix of model {model_name} on test data")
+    plt.show()
     
 
 class columnsFamilies:
