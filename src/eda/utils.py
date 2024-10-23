@@ -2,6 +2,8 @@ import pandas as pd
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
 from src.exception import CustomException
 import sys
 import random
@@ -202,6 +204,26 @@ def vis_feature_densities(df, target):
 
     fig.suptitle("Feature density")
     plt.show()
+
+
+def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicted):
+    """
+    Reports a model performance : accuracy, precision, recall and f1 score
+    """
+    print ("Performance on training data   ")
+    print ("-------------------------------")
+    print ("Train accuracy :", accuracy_score(y_train, y_train_predicted) )
+    print ("Train precision :", precision_score(y_train, y_train_predicted))
+    print ("Train recall :", recall_score(y_train, y_train_predicted))
+    print ("Train f1 score :", f1_score(y_train, y_train_predicted))
+    print ("-------------------------------")
+    print ("Performance on test data")
+    print ("-------------------------------")
+    print ("test accuracy :", accuracy_score(y_test, y_test_predicted))
+    print ("test precision :", precision_score(y_test, y_test_predicted))
+    print ("test recall :", recall_score(y_test, y_test_predicted))
+    print ("test f1 score :", f1_score(y_test, y_test_predicted))
+    print ("-------------------------------")
     
 
 class columnsFamilies:
