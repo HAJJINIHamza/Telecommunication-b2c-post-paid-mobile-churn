@@ -3,6 +3,7 @@ import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.manifold import TSNE
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, roc_auc_score
 from sklearn.calibration import calibration_curve
 
@@ -140,9 +141,12 @@ def vis_missing_values_heatmap(missing_values_matrix):
     plt.xticks(rotation = 315, ha="left")
     plt.show()
 
-def vis_tsne_data_distribution(data, target, perplexity = 30):
+def vis_tsne_data_distribution(data, target, perplexity = 30, figsize=(15, 10), palette = "coolwarm"):
     """
     Applyes TSNE on data and plots data distribution labeled by target
+    Parameters:
+    -----------
+    target: is a column of dataframe not a name of a column
     """
     print ("Applying tsne on data")
     data_tsne = TSNE(n_components = 2, perplexity = perplexity).fit_transform(data)
@@ -150,8 +154,8 @@ def vis_tsne_data_distribution(data, target, perplexity = 30):
     data_tsne["churn"] = target
     #Plot
     print ("Ploting data distribution")
-    plt.figure(figsize=(15, 10))
-    sns.scatterplot(data = data_tsne, x="x1", y="x2", hue = "churn")
+    plt.figure(figsize=figsize)
+    sns.scatterplot(data = data_tsne, x="x1", y="x2", hue = "churn", palette=palette)
     plt.title(f"Perplexity {perplexity} TSNE data distribution")
     plt.show()
     
