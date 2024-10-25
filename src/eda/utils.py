@@ -3,7 +3,7 @@ import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, roc_auc_score
 from sklearn.calibration import calibration_curve
 
 from src.exception import CustomException
@@ -207,6 +207,34 @@ def vis_feature_densities(df, target):
     fig.suptitle("Feature density")
     plt.show()
 
+def plot_feature_importance(importance,names,model_type, max_n_features = None):
+    """
+    Plot feature importance in descending order
+    """
+    
+    if max_n_features == None:
+        max_n_features = len(importance)
+
+    #Create arrays from feature importance and feature names
+    feature_importance = np.array(importance)
+    feature_names = np.array(names)
+
+    #Create a DataFrame using a Dictionary
+    data={'feature_names':names,'feature_importance':feature_importance}
+    fi_df = pd.DataFrame(data)
+
+    #Sort the DataFrame in order decreasing feature importance
+    fi_df.sort_values(by=['feature_importance'], ascending=False,inplace=True)
+
+    #Define size of bar plot
+    plt.figure(figsize=(20,80))
+    #Plot Searborn bar chart
+    sns.barplot(x=fi_df['feature_importance'][0:max_n_features], y=fi_df['feature_names'][0:max_n_features])
+    #Add chart labels
+    plt.title(model_type + ' FEATURE IMPORTANCE')
+    plt.xlabel('FEATURE IMPORTANCE')
+    plt.ylabel('FEATURE NAMES')
+
 
 def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicted, model_name=""):
     """
@@ -230,17 +258,44 @@ def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicte
 def vis_calibration_curve (n_bins, y_test, y_test_predicted_prob):
     """
     Plots calibration of the model, meaning fraction of positives per mean predicted porbabilities
+    Parameters:
+    -----------
+    n_bins : should be a list of int values
     """
-    fraction_of_positives, mean_predicted_probabilities = calibration_curve(y_test, y_test_predicted_prob, n_bins=n_bins)
+    nrows = len(n_bins)//2 + len(n_bins)%2
+    fig, axes = plt.subplots(nrows=nrows, ncols=2, figsize=(10, 5*nrows))
+    axes = axes.flatten()
+    for i, bins in enumerate(n_bins):
+        # Calculate the calibration curve for each bin size
+        fraction_of_positives, mean_predicted_probabilities = calibration_curve(y_test, y_test_predicted_prob, n_bins=bins)
+        
+        # Plot the calibration curve on the respective axis
+        axes[i].plot(mean_predicted_probabilities, fraction_of_positives, marker='o', label=f'XGBoost (n_bins={bins})')
+        axes[i].plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfectly Calibrated')
+        
+        # Set labels and title for each subplot
+        axes[i].set_xlabel('Mean Predicted Probability')
+        axes[i].set_ylabel('Fraction of Positives')
+        axes[i].set_title(f'Calibration Curve (n_bins={bins})')
+        axes[i].legend()
 
-    # Step 4: Plot the calibration curve
+    plt.tight_layout()
+    plt.show()
+
+def vis_roc_curve (y_test, y_test_predicted_prob):
+    fpr, tpr, thresholds = roc_curve(y_test, y_test_predicted_prob)
+
+    # Calculate AUC (Area Under Curve) for reference
+    auc_score = roc_auc_score(y_test, y_test_predicted_prob)
+
+    # Plotting
     plt.figure(figsize=(5, 5))
-    plt.plot(mean_predicted_probabilities, fraction_of_positives, marker='o', label='XGBoost')
-    plt.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfectly Calibrated')
-    plt.xlabel('Mean Predicted Probability')
-    plt.ylabel('Fraction of Positives')
-    plt.title(f'Calibration Curve for n_bins={n_bins}')
-    plt.legend()
+    plt.plot(fpr, tpr, color='Red', label=f'ROC Curve (AUC = {auc_score:.2f})')
+    plt.plot([0, 1], [0, 1], color='gray', linestyle='--', label="Random classifier")  
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC Curve')
+    plt.legend(loc='lower right')
     plt.show()
     
 
