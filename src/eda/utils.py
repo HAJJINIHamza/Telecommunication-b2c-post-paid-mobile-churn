@@ -4,6 +4,7 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.calibration import calibration_curve
 
 from src.exception import CustomException
 import sys
@@ -223,6 +224,23 @@ def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicte
     plt.figure(figsize=(4, 3))
     sns.heatmap(matrice_confusion/np.sum(matrice_confusion), annot=True, cmap="Blues", fmt=".2%")
     plt.title(f"Confusion matrix of model {model_name} on test data")
+    plt.show()
+
+
+def vis_calibration_curve (n_bins, y_test, y_test_predicted_prob):
+    """
+    Plots calibration of the model, meaning fraction of positives per mean predicted porbabilities
+    """
+    fraction_of_positives, mean_predicted_probabilities = calibration_curve(y_test, y_test_predicted_prob, n_bins=n_bins)
+
+    # Step 4: Plot the calibration curve
+    plt.figure(figsize=(5, 5))
+    plt.plot(mean_predicted_probabilities, fraction_of_positives, marker='o', label='XGBoost')
+    plt.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfectly Calibrated')
+    plt.xlabel('Mean Predicted Probability')
+    plt.ylabel('Fraction of Positives')
+    plt.title(f'Calibration Curve for n_bins={n_bins}')
+    plt.legend()
     plt.show()
     
 
