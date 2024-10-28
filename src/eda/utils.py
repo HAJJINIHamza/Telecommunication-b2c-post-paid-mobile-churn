@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.manifold import TSNE
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, roc_auc_score
+from sklearn.metrics import precision_recall_curve
 from sklearn.calibration import calibration_curve
 
 from src.exception import CustomException
@@ -154,6 +155,7 @@ def vis_tsne_data_distribution(data, target, perplexity = 30, figsize=(15, 10), 
     data_tsne["churn"] = target
     #Plot
     print ("Ploting data distribution")
+    sns.set_theme()
     plt.figure(figsize=figsize)
     sns.scatterplot(data = data_tsne, x="x1", y="x2", hue = "churn", palette=palette)
     plt.title(f"Perplexity {perplexity} TSNE data distribution")
@@ -211,7 +213,7 @@ def vis_feature_densities(df, target):
     fig.suptitle("Feature density")
     plt.show()
 
-def plot_feature_importance(importance,names,model_type, max_n_features = None):
+def plot_feature_importance(importance,names,model_type, max_n_features = None, figsize=(20,80)):
     """
     Plot feature importance in descending order
     """
@@ -231,7 +233,8 @@ def plot_feature_importance(importance,names,model_type, max_n_features = None):
     fi_df.sort_values(by=['feature_importance'], ascending=False,inplace=True)
 
     #Define size of bar plot
-    plt.figure(figsize=(20,80))
+    sns.set_theme()
+    plt.figure(figsize=figsize)
     #Plot Searborn bar chart
     sns.barplot(x=fi_df['feature_importance'][0:max_n_features], y=fi_df['feature_names'][0:max_n_features])
     #Add chart labels
@@ -253,9 +256,12 @@ def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicte
     print (f"-------------------------------------------------------------")
 
     matrice_confusion = confusion_matrix(y_test, y_test_predicted)
+    sns.set_theme()
     plt.figure(figsize=(4, 3))
     sns.heatmap(matrice_confusion/np.sum(matrice_confusion), annot=True, cmap="Blues", fmt=".2%")
     plt.title(f"Confusion matrix of model {model_name} on test data")
+    plt.xlabel("Acctual values")
+    plt.ylabel("Predicted values")
     plt.show()
 
 
@@ -267,6 +273,7 @@ def vis_calibration_curve (n_bins, y_test, y_test_predicted_prob):
     n_bins : should be a list of int values
     """
     nrows = len(n_bins)//2 + len(n_bins)%2
+    sns.set_theme()
     fig, axes = plt.subplots(nrows=nrows, ncols=2, figsize=(10, 5*nrows))
     axes = axes.flatten()
     for i, bins in enumerate(n_bins):
@@ -287,12 +294,16 @@ def vis_calibration_curve (n_bins, y_test, y_test_predicted_prob):
     plt.show()
 
 def vis_roc_curve (y_test, y_test_predicted_prob):
+    """
+    Plot the ROC curve
+    """
     fpr, tpr, thresholds = roc_curve(y_test, y_test_predicted_prob)
 
     # Calculate AUC (Area Under Curve) for reference
     auc_score = roc_auc_score(y_test, y_test_predicted_prob)
 
     # Plotting
+    sns.set_theme()
     plt.figure(figsize=(5, 5))
     plt.plot(fpr, tpr, color='Red', label=f'ROC Curve (AUC = {auc_score:.2f})')
     plt.plot([0, 1], [0, 1], color='gray', linestyle='--', label="Random classifier")  
@@ -300,6 +311,26 @@ def vis_roc_curve (y_test, y_test_predicted_prob):
     plt.ylabel('True Positive Rate')
     plt.title('ROC Curve')
     plt.legend(loc='lower right')
+    plt.show()
+
+def vis_precision_recall_thereshold(y_test, y_test_predicted_prob):
+    """
+    Plot precision and recall for different values of thereshold
+    Parameters:
+    -----------
+    y_test: column or array of acctual values
+    y_test_predicted_prob: column or array of predicted probabilities
+    """
+    precision, recall, thresholds = precision_recall_curve(y_test, y_test_predicted_prob)
+
+    sns.set_theme()
+    plt.figure(figsize=(6, 5))
+    plt.plot(thresholds, precision[:-1], 'b--', label='Precision')
+    plt.plot(thresholds, recall[:-1], 'g-', label='Recall')
+    plt.xlabel("Threshold")
+    plt.ylabel("precision-recall")
+    plt.title("Precision-Recall Curve with Thresholds")
+    plt.legend(loc="best")
     plt.show()
     
 
