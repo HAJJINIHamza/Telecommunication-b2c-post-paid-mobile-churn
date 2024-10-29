@@ -34,3 +34,9 @@ def setup_logger(class_name):
     logger.addFilter(ContextFilter(class_name))
 
     return logger
+
+#HOW TO USE 
+#from src.logger import setup_logger
+#logger = setup_logger('MyClass')
+# Log a message with the class name automatically included
+#logger.info("This is an info message.")
