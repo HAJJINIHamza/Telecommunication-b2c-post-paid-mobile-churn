@@ -130,30 +130,7 @@ class structuringPipeline:
     ###END OF CLASS
     
 
-def gamme_encoding(df):
-    """
-    Returns dataframe with a new column gamme_encoded
-    Parameters:
-    -----------
-    df should contain "gamme" feature
-    """
-    
-    gamme_mapping = {"Forfaits 49 dhs":1, 
-                     "Forfaits 99 dhs":2, 
-                     "Forfaits Hors 99 dhs":3}
-    new_df = df.copy()
-    new_df["gamme_encoded"] = [gamme_mapping[forfait] for forfait in df["gamme"]]
 
-    return new_df
-
-def get_x_y_data(df):
-    """
-    Returns x_data and y_data from df
-    """
-    #Get features and target variable
-    features, target = [col for col in df.columns if col not in ['dn',"gamme", 'churn_segment','churn_date', 'activation_bscs_date','id_date', 'churn']], ["churn"]
-    x, y = df[features], df[target]
-    return x, y
 
     
 

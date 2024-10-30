@@ -10,6 +10,7 @@ from src.logger import logging
 #Get todays's date
 date_time = datetime.today().strftime("%Y-%m-%d")
 train_dev_test_path = "data/train_dev_test"
+ressources_path = "src/ressources"
 
 
 #This class aims at transforming ingested data, including sampling, creating new variables and train dev test split 
@@ -24,9 +25,9 @@ class DataTransformation:
         Returns a dataframe after concatinating all the samples
         """
         try :
-            nbr_non_churners = 150 #150000
-            nbr_inactif_churners = 150 #140000
-            nbr_churn_operateur = 150 #10602
+            nbr_non_churners = 150000
+            nbr_inactif_churners = 140000
+            nbr_churn_operateur = 10602
 
             print ("Sampling data based on churn segement")
             print (f"nbr_non_churners {nbr_non_churners}")
@@ -64,8 +65,8 @@ class DataTransformation:
         df_train, df_dev = train_test_split(df, train_size = 0.499, random_state = 42, shuffle = True, stratify = df["churn"] )
         df_dev, df_test  = train_test_split(df_dev, train_size = 0.5, random_state = 42, shuffle = True, stratify = df_dev["churn"])
 
-        n_dev_set = 20 #25000
-        n_test_set = 10 #10000
+        n_dev_set = 25000
+        n_test_set = 10000
         df_dev = df_dev.sample(n=n_dev_set, random_state=42)
         df_test = df_test.sample(n=n_test_set, random_state=42)
 
@@ -90,23 +91,46 @@ class DataTransformation:
         save_train_dev_test_sets(df_train, df_dev, df_test)
         return df_train, df_dev, df_test
 #END OF CLASS
+
+class FeatureSelection:
+    def __init__(self, df_train, df_dev, df_test):
+        self.df_train = df_train
+        self.df_dev = df_dev
+        self.df_test = df_test
+    
+    def select_features(self, feature_names_file = "2024-10-16_feature_names_iter1.txt"):
+        with open(f"{ressources_path}/{feature_names_file}") as f:
+            feature_names = f.read()
+        # Séparer les colonnes en utilisant la virgule comme délimiteur
+        feature_names_iter1 = feature_names.split(',')
+        feature_names_iter1 = [col.strip() for col in feature_names_iter1]
+        print ("Selecting iter 1 features")
+        df_train = self.df_train[feature_names_iter1]
+        df_dev = self.df_dev[feature_names_iter1]
+        df_test = self.df_test[feature_names_iter1]
+        print (f"df_train shape: {df_train.shape}")
+        print (f"df_dev shape: {df_dev.shape}")
+        print (f"df_test shape: {df_test.shape}")
+        logging.info("Successfully selected iter 1 features")
+        return df_train, df_dev, df_test
+
     
 class HandlingMissingValues:
     def __init__(self, data_date: str):
         self.data_date = data_date
-
-    def load_train_dev_test(self):
+    
+    def load_train_dev_test(self, data_date):
         """
         Loading train dev test sets of date
         """
-        print ("Loading train dev and test sets, ensuring dn is a string type")
-        df_train = pd.read_csv(f"{train_dev_test_path}/{self.data_date}_df_train.csv", index_col = 0, dtype= {"dn": "string"}) 
-        df_dev = pd.read_csv(f"{train_dev_test_path}/{self.data_date}_df_dev.csv", index_col = 0, dtype= {"dn": "string"})
-        df_test = pd.read_csv(f"{train_dev_test_path}/{self.data_date}_df_test.csv", index_col = 0, dtype= {"dn": "string"})
+        print ("Loading train dev and test sets, ensuring dn is a string type for handling missing values")
+        df_train = pd.read_csv(f"{train_dev_test_path}/{data_date}_df_train.csv", index_col = 0, dtype= {"dn": "string"}) 
+        df_dev = pd.read_csv(f"{train_dev_test_path}/{data_date}_df_dev.csv", index_col = 0, dtype= {"dn": "string"})
+        df_test = pd.read_csv(f"{train_dev_test_path}/{data_date}_df_test.csv", index_col = 0, dtype= {"dn": "string"})
         print (f"df_train shape :{df_train.shape}")
         print (f"df_dev shape: {df_dev.shape}")
         print (f"df_test shape: {df_test.shape}")
-        logging.info("Successfully loaded train dev and test sets")
+        logging.info("Successfully loaded train dev and test sets for handling missing values")
         return df_train, df_dev, df_test
     
     def replace_0_values_with_nan(self, df_train, df_dev, df_test):
@@ -158,6 +182,7 @@ class HandlingMissingValues:
     
     def run_handling_missing_values(self):
         df_train, df_dev, df_test = self.load_train_dev_test()
+        df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
         df_train, df_dev, df_test = self.replace_0_values_with_nan(df_train, df_dev, df_test)
         df_train, df_dev, df_test = self.drop_columns_and_rows_with_all_values_null(df_train, df_dev, df_test, threshold=99)
         print ("filling all NAN with 0, in train dev and test sets")
@@ -165,7 +190,61 @@ class HandlingMissingValues:
         df_dev = df_dev.fillna(0)
         df_test = df_test.fillna(0)
         logging.info("Filled all NAN values with 0, in train dev and test sets")
+        print (f"Total number of missing values in df_train after filling all nan with 0 is : {df_train.isna().sum().sum()}")
         save_train_dev_test_sets(df_train, df_dev, df_test, name_sufix="_fillna_0")
+        return df_train, df_dev, df_test
+#END OF CLASS
+
+class FeatureEncoding:
+    def __init__(self, df_train, df_dev, df_test):
+        self.df_train = df_train
+        self.df_dev = df_dev
+        self.df_test = df_test
+
+    def gamme_encoding(self, df):
+        """
+        Returns dataframe with a new column gamme_encoded
+        Parameters:
+        -----------
+        df should contain "gamme" feature
+        """
+        gamme_mapping = {"Forfaits 49 dhs":1, 
+                        "Forfaits 99 dhs":2, 
+                        "Forfaits Hors 99 dhs":3}
+        df["gamme_encoded"] = [gamme_mapping[forfait] for forfait in df["gamme"]]
+        return df
+    
+    def run_feature_encoding (self):
+        print (f"Encoding gamme to gamme_encoded using this mapping")
+        df_train = self.gamme_encoding(self.df_train)
+        df_dev = self.gamme_encoding(self.df_dev)
+        df_test = self.gamme_encoding(self.df_test)
+        logging.info("Encoded gamme to gamme_encoded successfully using this mapping")
+        return df_train, df_dev, df_test
+#END OF CLASS
+
+class DataSplitting:
+    def __init__(self, df_train, df_dev, df_test):
+        self.df_train = df_train
+        self.df_dev = df_dev
+        self.df_test = df_test
+
+    def get_x_y_data(self, df):
+        """
+        Returns x_data and y_data from df
+        """
+        #Get features and target variable
+        features, target = [col for col in df.columns if col not in ['dn',"gamme", 'churn_segment','churn_date', 'activation_bscs_date','id_date', 'churn']], ["churn"]
+        x, y = df[features], df[target]
+        return x, y 
+    
+    def run_data_splitting(self):
+        print ("Splitting data to x and y")
+        x_train, y_train = self.get_x_y_data(self.df_train)
+        x_dev, y_dev = self.get_x_y_data(self.f_dev)
+        x_test, y_test = self.get_x_y_data(self.df_test)
+        print ("Splitted data to x and y")
+        return x_train, y_train, x_dev, y_dev, x_test, y_test
 #END OF CLASS
 
 
