@@ -3,6 +3,7 @@ import numpy as np
 import sys
 from sklearn.model_selection import train_test_split
 from datetime import datetime
+import pickle
 
 from src.exception import CustomException
 from src.logger import logging
@@ -84,6 +85,7 @@ class DataTransformation:
     def run_data_transformation(self):
         """
         Run transformation pipeline
+        Returns : df_train, df_dev, df_test
         """
         df = self.sample_data_by_churn_segment()
         df = self.get_churn_target_from_churn_segment(df)
@@ -99,6 +101,10 @@ class FeatureSelection:
         self.df_test = df_test
     
     def select_features(self, feature_names_file = "2024-10-16_feature_names_iter1.txt"):
+        """
+        Select only iter1 features from df_train, df_dev, df_test
+        Returns df_train, df_dev, df_test
+        """
         with open(f"{ressources_path}/{feature_names_file}") as f:
             feature_names = f.read()
         # Séparer les colonnes en utilisant la virgule comme délimiteur
@@ -116,13 +122,16 @@ class FeatureSelection:
 
     
 class HandlingMissingValues:
-    def __init__(self, data_date: str):
-        self.data_date = data_date
-    
+    def __init__(self, df_train, df_dev, df_test):
+        self.df_train = df_train
+        self.df_dev = df_dev
+        self.df_test = df_test
+    """
+    #Need this function only when data is not passed as inputs want to load data 
     def load_train_dev_test(self, data_date):
-        """
+        "
         Loading train dev test sets of date
-        """
+        "
         print ("Loading train dev and test sets, ensuring dn is a string type for handling missing values")
         df_train = pd.read_csv(f"{train_dev_test_path}/{data_date}_df_train.csv", index_col = 0, dtype= {"dn": "string"}) 
         df_dev = pd.read_csv(f"{train_dev_test_path}/{data_date}_df_dev.csv", index_col = 0, dtype= {"dn": "string"})
@@ -132,20 +141,21 @@ class HandlingMissingValues:
         print (f"df_test shape: {df_test.shape}")
         logging.info("Successfully loaded train dev and test sets for handling missing values")
         return df_train, df_dev, df_test
+    """    
     
-    def replace_0_values_with_nan(self, df_train, df_dev, df_test):
+    def replace_0_values_with_nan(self):
         #Get numerical columns from df
-        df_numerical_columns = df_train.dtypes[df_train.dtypes != "object" ].index.to_list()
+        df_numerical_columns = self.df_train.dtypes[self.df_train.dtypes != "object" ].index.to_list()
         df_numerical_columns = [ column for column in df_numerical_columns if column not in ["dn", "dn_group_id", "churn" ]]
         
         print ("Replacing 0 values with nan, in df_train, df_dev and df_test")
-        df_train[df_numerical_columns] = df_train[df_numerical_columns].replace(0, np.nan)
-        df_dev[df_numerical_columns] = df_dev[df_numerical_columns].replace(0, np.nan)
-        df_test[df_numerical_columns] = df_test[df_numerical_columns].replace(0, np.nan)
+        self.df_train[df_numerical_columns] = self.df_train[df_numerical_columns].replace(0, np.nan)
+        self.df_dev[df_numerical_columns] = self.df_dev[df_numerical_columns].replace(0, np.nan)
+        self.df_test[df_numerical_columns] = self.df_test[df_numerical_columns].replace(0, np.nan)
         logging.info("Successfully replaced 0 values with nan, in df_train, df_dev and df_test")
-        print (f"Are still there any 0 values in df_train after transforming 0 values into nan : {(df_train[df_numerical_columns] == 0).any().any()} ")
+        print (f"Are still there any 0 values in df_train after transforming 0 values into nan : {(self.df_train[df_numerical_columns] == 0).any().any()} ")
 
-        return df_train, df_dev, df_test 
+        return self.df_train, self.df_dev, self.df_test 
     
     def drop_columns_and_rows_with_all_values_null(self, df_train, df_dev, df_test, threshold=99):
         """
@@ -181,10 +191,10 @@ class HandlingMissingValues:
         return df_train, df_dev, df_test
     
     def run_handling_missing_values(self):
-        df_train, df_dev, df_test = self.load_train_dev_test()
-        df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
-        df_train, df_dev, df_test = self.replace_0_values_with_nan(df_train, df_dev, df_test)
-        df_train, df_dev, df_test = self.drop_columns_and_rows_with_all_values_null(df_train, df_dev, df_test, threshold=99)
+        #df_train, df_dev, df_test = self.load_train_dev_test()
+        #df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
+        df_train, df_dev, df_test = self.replace_0_values_with_nan()
+        df_train, df_dev, df_test = self.drop_columns_and_rows_with_all_values_null(df_train, df_dev, df_test)
         print ("filling all NAN with 0, in train dev and test sets")
         df_train = df_train.fillna(0)
         df_dev = df_dev.fillna(0)
@@ -239,6 +249,9 @@ class DataSplitting:
         return x, y 
     
     def run_data_splitting(self):
+        """
+        Returns x_train, y_train, x_dev, y_dev, x_test, y_test
+        """
         print ("Splitting data to x and y")
         x_train, y_train = self.get_x_y_data(self.df_train)
         x_dev, y_dev = self.get_x_y_data(self.f_dev)
@@ -247,7 +260,40 @@ class DataSplitting:
         return x_train, y_train, x_dev, y_dev, x_test, y_test
 #END OF CLASS
 
+class DataNormalization:
+    def __init__(self, x_train, x_dev, x_test):
+        self.x_train = x_train
+        self.x_dev = x_dev
+        self.x_test = x_test
+    
+    def normalize_data(self, df):
+        """
+        Normalize dataframe using stored standard scaler
+        """
+        #load normalizer
+        with open("models/processors/2024-10-22_standard_scaler.pkl", "rb") as f:
+            standard_scaler = pickle.load(f)  
+        #Normalize
+        #Transform data sets
+        df_norm = standard_scaler.transform(df)
+        df_norm = pd.DataFrame(df_norm, columns = self.x_train.columns)
 
+    def run_data_normalization(self):
+        """
+        Run normalization on x_train, x_dev and x_test
+        returns : x_train_norm, x_dev_norm, x_test_norm
+        """
+        print ("Normalizing data: x_train, x_dev and x_test")
+        x_train_norm = self.normalize_data(self.x_train)
+        x_dev_norm = self.normalize_data(self.x_dev)
+        x_test_norm = self.normalize_data(self.x_test)
+        logging.info("Successfully normalized x_train, x_dev, x_test")
+        return x_train_norm, x_dev_norm, x_test_norm
+#END OF CLASS       
+
+
+############################################ Helper functions #####################################################
+# TODO : THESE FUNCTIONS MUST PASS TO src/utils.py LATER
 def save_train_dev_test_sets( df_train, df_dev, df_test, name_sufix=""):
     """
     Save train, dev and test sets 
@@ -282,6 +328,15 @@ def drop_df_null_columns(df, threshold = 99):
     df.drop(null_columns_to_be_deleted, axis = "columns", inplace = True)
     print (f"DataFrame new shape {df.shape}")
     return df
+#######################################################################################################################
+
+
+def run_data_processing(df):
+    df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
+    df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
+
+
+
 
 
 
