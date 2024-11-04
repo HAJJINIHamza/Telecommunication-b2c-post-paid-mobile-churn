@@ -54,7 +54,7 @@ class DataTransformation:
         Returns df with new column "churn", from churn_segment variable, containing 0 if not churner else 1.
         """
         print ("Creating churn target from churn segemnt ")
-        target_list = [0 if churn_segment == "non_churners" else 1 for churn_segment in df["churn_segment"].to_list()]
+        target_list = [0 if churn_segment == "non_churners" else 1 for churn_segment in df["churn_segment"]]
         df['churn'] = target_list
         logging.info("Successfully created churn target from churn segment")
         return self.df
@@ -63,13 +63,14 @@ class DataTransformation:
     #Train test split 
     def get_train_dev_test_sets(self, df:pd.DataFrame):
         print ("Train, dev and test Spliting")
-        df_train, df_dev = train_test_split(df, train_size = 0.499, random_state = 42, shuffle = True, stratify = df["churn"] )
-        df_dev, df_test  = train_test_split(df_dev, train_size = 0.5, random_state = 42, shuffle = True, stratify = df_dev["churn"])
+        df_train, df_dev = train_test_split(df, train_size = 0.7, random_state = 42, shuffle = True, stratify = df["churn"] )
+        df_dev, df_test  = train_test_split(df_dev, train_size = 0.7, random_state = 42, shuffle = True, stratify = df_dev["churn"])
 
-        n_dev_set = 25000
-        n_test_set = 10000
-        df_dev = df_dev.sample(n=n_dev_set, random_state=42)
-        df_test = df_test.sample(n=n_test_set, random_state=42)
+        #Take only a sample of test and train data
+        #n_dev_set = 25000
+        #n_test_set = 10000
+        #df_dev = df_dev.sample(n=n_dev_set, random_state=42)
+        #df_test = df_test.sample(n=n_test_set, random_state=42)
 
         print (f"df_train shape :{df_train.shape}")
         print (f"df_dev shape: {df_dev.shape}")
@@ -87,8 +88,8 @@ class DataTransformation:
         Run transformation pipeline
         Returns : df_train, df_dev, df_test
         """
-        df = self.sample_data_by_churn_segment()
-        df = self.get_churn_target_from_churn_segment(df)
+        #df = self.sample_data_by_churn_segment()       #TODO: we need to sample data by churn segment only in training pipeline
+        df = self.get_churn_target_from_churn_segment(self.df)
         df_train, df_dev, df_test = self.get_train_dev_test_sets(df)
         save_train_dev_test_sets(df_train, df_dev, df_test)
         return df_train, df_dev, df_test
@@ -161,24 +162,24 @@ class HandlingMissingValues:
         """
         Drop columns and rows where nan values percentage is bigger than thereshold
         """
-        print ("Deleting all df_train null columns")
-        df_train = drop_df_null_columns(df_train, threshold = threshold)
+        #Drop columns with all values null 
+        #print ("Deleting all df_train null columns")
+        #df_train = drop_df_null_columns(df_train, threshold = threshold)
         #Take same columns as df_train
-        print ("Taking same columns as df_train in df_dev and df_test")
-        df_dev = df_dev[df_train.columns]
-        df_test = df_test[df_train.columns]
-        logging.info("Droped all columns with all values nulles")
+        #print ("Taking same columns as df_train in df_dev and df_test")
+        #df_dev = df_dev[df_train.columns]
+        #df_test = df_test[df_train.columns]
+        #logging.info("Droped all columns with all values nulles")
 
         print ("Deleting all null rows from train dev and test sets")
-        print ("Drop all null rows of df_train")
         df_train_T = df_train.T
         df_train_T=drop_df_null_columns(df_train_T, threshold=threshold)
         df_train = df_train_T.T
-        print ("Drop all null rows of df_train")
+        print ("Drop all null rows of df_dev")
         df_dev_T = df_dev.T
         df_dev_T=drop_df_null_columns(df_dev_T, threshold=threshold)
         df_dev = df_dev_T.T
-        print ("Drop all null rows of df_train")
+        print ("Drop all null rows of df_test")
         df_test_T = df_test.T
         df_test_T=drop_df_null_columns(df_test_T, threshold=threshold)
         df_test = df_test_T.T
@@ -191,6 +192,13 @@ class HandlingMissingValues:
         return df_train, df_dev, df_test
     
     def run_handling_missing_values(self):
+        """
+        Returns df_train, df_dev and df_test after applying these steps:
+        - Replace all 0 values with nan
+        - Drop all columns and rows with all values null 
+        - Replace all nan values with 0
+        - Save dataframes
+        """
         #df_train, df_dev, df_test = self.load_train_dev_test()
         #df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
         df_train, df_dev, df_test = self.replace_0_values_with_nan()
@@ -225,6 +233,10 @@ class FeatureEncoding:
         return df
     
     def run_feature_encoding (self):
+        """
+        Encode features
+        Returns df_train, df_dev and df_test
+        """
         print (f"Encoding gamme to gamme_encoded using this mapping")
         df_train = self.gamme_encoding(self.df_train)
         df_dev = self.gamme_encoding(self.df_dev)
@@ -250,13 +262,17 @@ class DataSplitting:
     
     def run_data_splitting(self):
         """
+        Split data and returns
         Returns x_train, y_train, x_dev, y_dev, x_test, y_test
         """
         print ("Splitting data to x and y")
         x_train, y_train = self.get_x_y_data(self.df_train)
-        x_dev, y_dev = self.get_x_y_data(self.f_dev)
+        x_dev, y_dev = self.get_x_y_data(self.df_dev)
         x_test, y_test = self.get_x_y_data(self.df_test)
-        print ("Splitted data to x and y")
+        logging.info ("Splitted data to x and y")
+        print (f"x_train shape is: {x_train.shape}")
+        print (f"x_dev shape is: {x_dev.shape}")
+        print (f"x_test shape is: {x_test.shape}")
         return x_train, y_train, x_dev, y_dev, x_test, y_test
 #END OF CLASS
 
@@ -276,7 +292,8 @@ class DataNormalization:
         #Normalize
         #Transform data sets
         df_norm = standard_scaler.transform(df)
-        df_norm = pd.DataFrame(df_norm, columns = self.x_train.columns)
+        df_norm = pd.DataFrame(df_norm, columns = df.columns)
+        return df_norm
 
     def run_data_normalization(self):
         """
@@ -330,10 +347,20 @@ def drop_df_null_columns(df, threshold = 99):
     return df
 #######################################################################################################################
 
-
 def run_data_processing(df):
+    """
+
+    Returns : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test 
+    """
     df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
     df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
+    df_train, df_dev, df_test = HandlingMissingValues(df_train, df_dev, df_test).run_handling_missing_values()
+    df_train, df_dev, df_test = FeatureEncoding(df_train, df_dev, df_test).run_feature_encoding()
+    x_train, y_train, x_dev, y_dev, x_test, y_test = DataSplitting(df_train, df_dev, df_test).run_data_splitting()
+    x_train_norm, x_dev_norm, x_test_norm = DataNormalization(x_train, x_dev, x_test).run_data_normalization()
+    return x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test 
+
+
 
 
 
