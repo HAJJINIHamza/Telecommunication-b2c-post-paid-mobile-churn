@@ -4,6 +4,7 @@ import sys
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 import pickle
+import ast
 
 from src.exception import CustomException
 from src.logger import logging
@@ -12,6 +13,7 @@ from src.logger import logging
 date_time = datetime.today().strftime("%Y-%m-%d")
 train_dev_test_path = "data/train_dev_test"
 ressources_path = "src/ressources"
+data_path = "data/experiments_data"
 
 
 #This class aims at transforming ingested data, including sampling, creating new variables and train dev test split 
@@ -96,14 +98,12 @@ class DataTransformation:
 #END OF CLASS
 
 class FeatureSelection:
-    def __init__(self, df_train, df_dev, df_test):
-        self.df_train = df_train
-        self.df_dev = df_dev
-        self.df_test = df_test
+    def __init__(self):
+        pass
     
-    def select_features(self, feature_names_file = "2024-10-16_feature_names_iter1.txt"):
+    def select_train_features(self, df, feature_names_file = "2024-10-16_feature_names_iter1.txt"):
         """
-        Select only iter1 features from df_train, df_dev, df_test
+        Select only train features from df_train, df_dev, df_test
         Returns df_train, df_dev, df_test
         """
         with open(f"{ressources_path}/{feature_names_file}") as f:
@@ -111,10 +111,30 @@ class FeatureSelection:
         # Séparer les colonnes en utilisant la virgule comme délimiteur
         feature_names_iter1 = feature_names.split(',')
         feature_names_iter1 = [col.strip() for col in feature_names_iter1]
+        df = self.df_train[feature_names_iter1]
+        return df
+    
+    def select_inference_features(self, df):
+        """
+        Select inference features from df
+        Returns df
+        """
+        print ("Selecting inference featrues from df")
+        with open("models/ressources/2024-10-25_inference_feature_names.txt", "r") as f:
+            feature_names = ast.literal_eval(f.read())
+        df = df[feature_names]
+        logging.info("Selected inference features from df")
+        return df
+        
+    def run_feature_selection(self, df_train, df_dev, df_test):
+        """
+        Select only iter1 features from df_train, df_dev, df_test
+        Returns df_train, df_dev, df_test
+        """
         print ("Selecting iter 1 features")
-        df_train = self.df_train[feature_names_iter1]
-        df_dev = self.df_dev[feature_names_iter1]
-        df_test = self.df_test[feature_names_iter1]
+        df_train = self.select_train_features(df_train)
+        df_dev = self.select_train_features(df_dev)
+        df_test = self.select_train_features(df_test)
         print (f"df_train shape: {df_train.shape}")
         print (f"df_dev shape: {df_dev.shape}")
         print (f"df_test shape: {df_test.shape}")
@@ -214,42 +234,39 @@ class HandlingMissingValues:
 #END OF CLASS
 
 class FeatureEncoding:
-    def __init__(self, df_train, df_dev, df_test):
-        self.df_train = df_train
-        self.df_dev = df_dev
-        self.df_test = df_test
+    def __init__(self):
+        pass
 
     def gamme_encoding(self, df):
         """
         Returns dataframe with a new column gamme_encoded
         Parameters:
         -----------
-        df should contain "gamme" feature
+        df: should contain "gamme" feature
         """
         gamme_mapping = {"Forfaits 49 dhs":1, 
                         "Forfaits 99 dhs":2, 
                         "Forfaits Hors 99 dhs":3}
-        df["gamme_encoded"] = [gamme_mapping[forfait] for forfait in df["gamme"]]
+        df["gamme"] = [gamme_mapping[forfait] for forfait in df["gamme"]]
+        df = df.rename(columns={"gamme": "gamme_encoded"})
         return df
     
-    def run_feature_encoding (self):
+    def run_feature_encoding (self, df_train, df_dev, df_test):
         """
         Encode features
         Returns df_train, df_dev and df_test
         """
         print (f"Encoding gamme to gamme_encoded using this mapping")
-        df_train = self.gamme_encoding(self.df_train)
-        df_dev = self.gamme_encoding(self.df_dev)
-        df_test = self.gamme_encoding(self.df_test)
+        df_train = self.gamme_encoding(df_train)
+        df_dev = self.gamme_encoding(df_dev)
+        df_test = self.gamme_encoding(df_test)
         logging.info("Encoded gamme to gamme_encoded successfully using this mapping")
         return df_train, df_dev, df_test
 #END OF CLASS
 
 class DataSplitting:
-    def __init__(self, df_train, df_dev, df_test):
-        self.df_train = df_train
-        self.df_dev = df_dev
-        self.df_test = df_test
+    def __init__(self):
+        pass
 
     def get_x_y_data(self, df):
         """
@@ -260,15 +277,15 @@ class DataSplitting:
         x, y = df[features], df[target]
         return x, y 
     
-    def run_data_splitting(self):
+    def run_data_splitting(self, df_train, df_dev, df_test):
         """
         Split data and returns
         Returns x_train, y_train, x_dev, y_dev, x_test, y_test
         """
         print ("Splitting data to x and y")
-        x_train, y_train = self.get_x_y_data(self.df_train)
-        x_dev, y_dev = self.get_x_y_data(self.df_dev)
-        x_test, y_test = self.get_x_y_data(self.df_test)
+        x_train, y_train = self.get_x_y_data(df_train)
+        x_dev, y_dev = self.get_x_y_data(df_dev)
+        x_test, y_test = self.get_x_y_data(df_test)
         logging.info ("Splitted data to x and y")
         print (f"x_train shape is: {x_train.shape}")
         print (f"x_dev shape is: {x_dev.shape}")
@@ -277,10 +294,8 @@ class DataSplitting:
 #END OF CLASS
 
 class DataNormalization:
-    def __init__(self, x_train, x_dev, x_test):
-        self.x_train = x_train
-        self.x_dev = x_dev
-        self.x_test = x_test
+    def __init__(self):
+        pass
     
     def normalize_data(self, df):
         """
@@ -295,15 +310,15 @@ class DataNormalization:
         df_norm = pd.DataFrame(df_norm, columns = df.columns)
         return df_norm
 
-    def run_data_normalization(self):
+    def run_data_normalization(self, x_train, x_dev, x_test):
         """
         Run normalization on x_train, x_dev and x_test
         returns : x_train_norm, x_dev_norm, x_test_norm
         """
         print ("Normalizing data: x_train, x_dev and x_test")
-        x_train_norm = self.normalize_data(self.x_train)
-        x_dev_norm = self.normalize_data(self.x_dev)
-        x_test_norm = self.normalize_data(self.x_test)
+        x_train_norm = self.normalize_data(x_train)
+        x_dev_norm = self.normalize_data(x_dev)
+        x_test_norm = self.normalize_data(x_test)
         logging.info("Successfully normalized x_train, x_dev, x_test")
         return x_train_norm, x_dev_norm, x_test_norm
 #END OF CLASS       
@@ -347,18 +362,59 @@ def drop_df_null_columns(df, threshold = 99):
     return df
 #######################################################################################################################
 
-def run_data_processing(df):
+def run_training_data_processing_pipeline(df):
     """
-
+    Applies these steps on df:
+    - Data Transformation
+    - Feature Selection
+    - Handling Missing Values
+    - Feature Encoding
+    - Data Splitting
+    - Data Normalization
     Returns : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test 
     """
+    logging.info("############################# Running training data processing pipeline #############################")
     df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
-    df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
+    df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)
     df_train, df_dev, df_test = HandlingMissingValues(df_train, df_dev, df_test).run_handling_missing_values()
-    df_train, df_dev, df_test = FeatureEncoding(df_train, df_dev, df_test).run_feature_encoding()
-    x_train, y_train, x_dev, y_dev, x_test, y_test = DataSplitting(df_train, df_dev, df_test).run_data_splitting()
-    x_train_norm, x_dev_norm, x_test_norm = DataNormalization(x_train, x_dev, x_test).run_data_normalization()
+    df_train, df_dev, df_test = FeatureEncoding().run_feature_encoding(df_train, df_dev, df_test)
+    x_train, y_train, x_dev, y_dev, x_test, y_test = DataSplitting().run_data_splitting(df_train, df_dev, df_test)
+    x_train_norm, x_dev_norm, x_test_norm = DataNormalization().run_data_normalization(x_train, x_dev, x_test)
     return x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test 
+
+def run_inference_data_processing_pipeline(df):
+    """
+    Applies these steps on df:
+    - Extract list of dns from df
+    - Fill all nan values with 0
+    - Encode features
+    - Normalize data
+
+    Returns df_norm, dns
+    """
+    logging.info("############################# Running inference data processing pipeline #############################")
+    print ("Extracting dns list from df")
+    dns = df['dn']
+    logging.info("Extracted dns from df")
+    df = FeatureSelection().select_inference_features(df)
+    print ("Filling nan values with 0")
+    df = df.fillna(0)
+    logging.info("Filled nan values with 0")
+    print (f"Total number of missing values in df_train after filling all nan with 0 is : {df.isna().sum().sum()}")
+    df = FeatureEncoding().gamme_encoding(df)
+    df_norm = DataNormalization().normalize_data(df)
+    return df_norm, dns
+
+
+#TODO : Retest run_training_data_processing_pipeline()
+
+    
+
+
+
+    
+
+    
 
 
 
