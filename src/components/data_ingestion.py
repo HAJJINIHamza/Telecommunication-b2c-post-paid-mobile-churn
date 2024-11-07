@@ -66,7 +66,7 @@ def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_in
     spark = get_spark_session()
     
     #Feature tables names 
-    data_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_data_stat_features"
+    data_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_data_stat_features"  #TODO : These table names could will change in the future
     data_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_data_trend_features"
     voice_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_voice_stat_features"
     voice_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_voice_trend_features"
@@ -105,10 +105,10 @@ def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_in
     logging.info("Ingestion completed")
     return feature_dict
 
-def get_churn_target():
+def get_target_table(table_name = "tel_test_dtddds.dev_bcppmchurn_target_table_pc3_20240607"):
     
-    """
-    Loads target table from impala : dev_bcppmchurn_target_table_pc3_20240607
+    f"""
+    Loads target table from impala {table_name}
     """
     
     #Initiate a spark session
@@ -121,8 +121,7 @@ def get_churn_target():
     
     try:
         #Loading target table  
-        table_name = "tel_test_dtddds.dev_bcppmchurn_target_table_pc3_20240607"    #This table name could change in the future
-        QUERY = f"SELECT * FROM {table_name}"    #TODO HAMZA: DELETE LIMIT 100
+        QUERY = f"""SELECT * FROM {table_name} WHERE churn_segment = "non_churners" """   #TODO : Remember that you filter on churn_segment 
         print(f"Loading target_table : {table_name}")
         churners_non_churners = spark.sql(QUERY)
         logging.info(f"Target table: {table_name} succefully loaded")

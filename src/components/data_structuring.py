@@ -1,7 +1,7 @@
 import pandas as pd
 from src.exception import CustomException
 import sys
-from src.components.data_ingestion import get_churn_target
+
 from src.logger import logging
 
 """
@@ -11,7 +11,7 @@ This class is meant for structuring data
 3. Pivot tables based on pivot + value columns
 """ 
 
-class structuringPipeline:
+class StructuringPipeline:
     def __init__(self, features_dict: dict, churners_non_churners: pd.DataFrame):
         """
         Parameters :
@@ -104,14 +104,16 @@ class structuringPipeline:
         return df
 
         
-    def run_structuring_pipeline(self):
+    def run_structuring_pipeline(self, data_date):
         """
         Run all the pipeline to structure data
         1. Takes as input table features
         2. Apply merge_and_concat_features() 
         3. Apply pivot_table()
+        4. Apply merge_feature_tables_with_target_table
         """
-        print("Starting data structuring")
+        logging.info("#############################  Structuring Pipeline #############################")
+        print("merging and concatinating feature tables completed successfully")
         df = self.merge_and_concat_features()
         logging.info("merging and concatinating feature tables completed successfully")
         print ("pivoting table")
@@ -124,9 +126,10 @@ class structuringPipeline:
         print ("droping duplicated dns")
         df.drop(df [df["dn"].duplicated()].index, inplace = True)
         logging.info("Droped duplicated dns dn dataframe successfully")
+        print ("Saving df")
+        df.to_csv(f"data/experiments_data/{data_date}_final_df.csv")
+        logging.info("Saved df")
         return df, pivoted_df
-    
-    
     ###END OF CLASS
     
 
