@@ -99,7 +99,7 @@ class StructuringPipeline:
         
         #Get churners
         print ("Joining pivoted table with target table")
-        df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = "left")
+        df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = "right")   #TODO: how parameter was set to "left" during training, and right for "inference" 
         logging.info("Joined pivoted table with target table successfully")
         return df
 
