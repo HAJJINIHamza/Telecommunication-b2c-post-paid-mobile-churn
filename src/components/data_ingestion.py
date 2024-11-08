@@ -47,7 +47,7 @@ def get_spark_session(app_name = config['spark_bcppmchurn']['app_name']):
         
     
         
-def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_interval: list):
+def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_interval: list, objective:str):
     """
     Loads data from impala and Returns a dataframe containing data from domains and feature_types
     parameters:
@@ -55,6 +55,7 @@ def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_in
     domains: could be data, voice, complaints, payement.
     features_types : either "stat" or "trend"
     dn_group_intervall : example [0, 10] -> get table where dn_group_id is between 0 and 10
+    objective :str, either "training" or "inference"
     """
     
     #Initiate a spark session
@@ -65,15 +66,28 @@ def get_feature_tables_from_impala(domains:list, feature_types:list, dn_group_in
     logging.info("Initiate spark session")
     spark = get_spark_session()
     
+    if objective == "training":
     #Feature tables names 
-    data_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_data_stat_features"  #TODO : These table names could will change in the future
-    data_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_data_trend_features"
-    voice_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_voice_stat_features"
-    voice_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_voice_trend_features"
-    complaints_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_complaints_stat_features"
-    complaints_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_complaints_trend_features"
-    payement_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_payment_stat_features"
-    payement_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_payment_trend_features"
+        data_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_data_stat_features"  #TODO : These table names will change in the future
+        data_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_data_trend_features"
+        voice_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_voice_stat_features"
+        voice_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_voice_trend_features"
+        complaints_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_complaints_stat_features"
+        complaints_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_complaints_trend_features"
+        payement_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_payment_stat_features"
+        payement_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_learning_payment_trend_features"
+    
+    elif objective == "inference":
+        data_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_data_stat_features"  #TODO : These table names will change in the future
+        data_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_data_trend_features"
+        voice_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_voice_stat_features"
+        voice_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_voice_trend_features"
+        complaints_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_complaints_stat_features"
+        complaints_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_complaints_trend_features"
+        payement_stat_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_payment_stat_features"
+        payement_trend_features_name = "tel_test_dtddds.dev_bcppmchurn_inference_payment_trend_features"
+    else:
+        raise ValueError("""objective argument must be "training" or "inference" """)     
     
     #Feature names dictinnarie
     feature_names_dict = {"data": {"stat": data_stat_features_name, "trend": data_trend_features_name},
