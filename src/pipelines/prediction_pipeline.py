@@ -18,7 +18,7 @@ class PredictionPipeline():
         -----------
         data_date: string, inference data date
         """
-        print ("Loading data")
+        print ("Loading data .......................................................")
         x_norm = pd.read_csv(f"data/inference_data/{data_date}_x_norm.csv", index_col=0)
         dns = pd.read_csv(f"data/inference_data/{data_date}_dns.csv", index_col=0)
         logging.info("Loaded data")
@@ -31,7 +31,7 @@ class PredictionPipeline():
         Load model from model/ml_models path
         Returns model
         """
-        print(f"Loading model {model_name}")
+        print(f"Loading model {model_name} .....................................")
         with open(f"models/ml_models/{model_name}", "rb") as f:
             MODEL = pickle.load(f)
         logging.info(f"Loaded model {model_name}")
@@ -47,7 +47,7 @@ class PredictionPipeline():
         MODEL : pickle model
         THERESHOLD : the probability thereshold based on wich classify as churner or not (between 0 and 1)
         """
-        print (f"Predecting churners, probabilitie thereshold is:{THERESHOLD}")
+        print (f"Predecting churners, probabilitie thereshold is:{THERESHOLD} .................")
         ddata = DMatrix(data=data)
         y_predicted_probabilities =  MODEL.predict(ddata)
         y_predicted = [int(y_predicted_probabilities[i]>THERESHOLD) for i in range(len(y_predicted_probabilities))]
@@ -63,6 +63,7 @@ class PredictionPipeline():
         - load data and dns 
         - load model 
         - predict churners 
+        - Save output data
 
         Returns : dns_churn
         """
@@ -70,7 +71,7 @@ class PredictionPipeline():
         x_norm, dns = self.load_data(data_date = batch_date)
         MODEL = self.load_model(model_name = model_name)
         dns_churn = self.predict_churners(data=x_norm, dns=dns,MODEL=MODEL)
-        print ("Saving output data")
+        print ("Saving output data .......................................................")
         dns_churn.to_csv(f"data/output_data/{batch_date}_dns_churn.csv", index=True)
         logging.info("Saved output data")
         return dns_churn

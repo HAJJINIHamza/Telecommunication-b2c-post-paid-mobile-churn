@@ -119,7 +119,7 @@ class FeatureSelection:
         Select inference features from df
         Returns df
         """
-        print ("Selecting inference featrues from df")
+        print ("Selecting inference featrues from df .......................................................")
         with open("models/ressources/2024-10-25_inference_feature_names.txt", "r") as f:
             feature_names = ast.literal_eval(f.read())
         df = df[feature_names]
@@ -244,12 +244,15 @@ class FeatureEncoding:
         -----------
         df: should contain "gamme" feature
         """
-        gamme_mapping = {np.nan:0,
-                        "Forfaits 49 dhs":1, 
-                        "Forfaits 99 dhs":2, 
-                        "Forfaits Hors 99 dhs":3}
-        df["gamme"] = [gamme_mapping[forfait] for forfait in df["gamme"]]
+        print ("Encoding gamme feature .......................................................")
+        gamme_mapping = {
+            "Forfaits 49 dhs": 1,
+            "Forfaits 99 dhs": 2,
+            "Forfaits Hors 99 dhs": 3
+        }
+        df["gamme"] = df["gamme"].map(gamme_mapping).fillna(0).astype(int)
         df = df.rename(columns={"gamme": "gamme_encoded"})
+        logging.info("Encoded gamme feature")
         return df
     
     def run_feature_encoding (self, df_train, df_dev, df_test):
@@ -257,11 +260,11 @@ class FeatureEncoding:
         Encode features
         Returns df_train, df_dev and df_test
         """
-        print (f"Encoding gamme to gamme_encoded using this mapping")
+        print (f"Encoding gamme to gamme_encoded .......................................................")
         df_train = self.gamme_encoding(df_train)
         df_dev = self.gamme_encoding(df_dev)
         df_test = self.gamme_encoding(df_test)
-        logging.info("Encoded gamme to gamme_encoded successfully using this mapping")
+        logging.info("Encoded gamme to gamme_encoded successfully")
         return df_train, df_dev, df_test
 #END OF CLASS
 
@@ -302,6 +305,7 @@ class DataNormalization:
         """
         Normalize dataframe using stored standard scaler
         """
+        print ("Normalizing data .......................................................")
         #load normalizer
         with open("models/processors/2024-10-22_standard_scaler.pkl", "rb") as f:
             standard_scaler = pickle.load(f)  
@@ -309,6 +313,7 @@ class DataNormalization:
         #Transform data sets
         df_norm = standard_scaler.transform(df)
         df_norm = pd.DataFrame(df_norm, columns = df.columns)
+        logging.info("Normalized data")
         return df_norm
 
     def run_data_normalization(self, x_train, x_dev, x_test):
@@ -387,24 +392,26 @@ def run_inference_data_processing_pipeline(df, batch_date):
     """
     Applies these steps on df:
     - Extract list of dns from df
+    - Select inference features 
     - Fill all nan values with 0
     - Encode features
     - Normalize data
+    - Saved inference data with dns
 
     Returns df_norm, dns
     """
     logging.info("############################# Running inference data processing pipeline #############################")
-    print ("Extracting dns list from df")
+    print ("Extracting dns list from df .......................................................")
     dns = df[['dn']]
     logging.info("Extracted dns from df")
     df = FeatureSelection().select_inference_features(df)
-    print ("Filling nan values with 0")
+    print ("Filling nan values with 0 .......................................................")
     df = df.fillna(0)
     logging.info("Filled nan values with 0")
     print (f"Total number of missing values in df_train after filling all nan with 0 is : {df.isna().sum().sum()}")
     df = FeatureEncoding().gamme_encoding(df)
     df_norm = DataNormalization().normalize_data(df)
-    print ("Saving inference data with dns")
+    print ("Saving inference data with dns .......................................................")
     df_norm.to_csv(f"data/inference_data/{batch_date}_x_norm.csv", index=True)
     dns.to_csv(f"data/inference_data/{batch_date}_dns.csv", index = True)
     logging.info("Saved inference data with dns")
