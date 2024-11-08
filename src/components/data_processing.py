@@ -402,7 +402,7 @@ def run_inference_data_processing_pipeline(df, batch_date):
     df = df.fillna(0)
     logging.info("Filled nan values with 0")
     print (f"Total number of missing values in df_train after filling all nan with 0 is : {df.isna().sum().sum()}")
-    #df = FeatureEncoding().gamme_encoding(df)
+    df = FeatureEncoding().gamme_encoding(df)
     df_norm = DataNormalization().normalize_data(df)
     print ("Saving inference data with dns")
     df_norm.to_csv(f"data/inference_data/{batch_date}_x_norm.csv", index=True)
