@@ -12,17 +12,18 @@ This class is meant for structuring data
 """ 
 
 class StructuringPipeline:
-    def __init__(self, features_dict: dict, churners_non_churners: pd.DataFrame):
+    def __init__(self, features_dict: dict, churners_non_churners: pd.DataFrame, objective:str):
         """
         Parameters :
         ------------
         features_dict : dictionnarie comming from get_tables_from_impala() in ingestion module: in the fromat {feature_domain: {feature_type: data}}
                         example {"data":{"stat": data_stat_features, "trend": data_trend_features}}
         churners_non_churners : Target table
-        
+        objective : "training" or "inference“
         """
         self.features_dict = features_dict
         self.churners_non_churners = churners_non_churners
+        self.objective = objective
 
     def merge_same_domain_features(self, domain:str, domain_stat_features, domain_trend_features):
         """
@@ -95,11 +96,20 @@ class StructuringPipeline:
     def merge_feature_tables_with_target_table(self, pivoted_df, churners_non_churners):
         """
         Merges target table left joind with feature tables (already pivoted on "dn" and "pivot_value")
+        Parameters:
+        -----------
+        objective : string, "training" or "inference"
         """
         
+        if self.objective == "training":
+            how_to_join = "left"
+        elif self.objective == "inference":
+            how_to_join = "right"
+        else : 
+            raise ValueError("""objective parameter should be either "training" or "inference" """)
         #Get churners
         print ("Joining pivoted table with target table")
-        df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = "right")   #TODO: how parameter was set to "left" during training, and right for "inference" 
+        df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = how_to_join)   #TODO: how parameter was set to "left" during training, and right for "inference" 
         logging.info("Joined pivoted table with target table successfully")
         return df
 
