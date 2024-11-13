@@ -121,6 +121,7 @@ class StructuringPipeline:
         2. Apply merge_and_concat_features() 
         3. Apply pivot_table()
         4. Apply merge_feature_tables_with_target_table
+        5. Save resulting df in data/experiments_data
         """
         logging.info("#############################  Structuring Pipeline #############################")
         print("merging and concatinating feature tables completed successfully")
