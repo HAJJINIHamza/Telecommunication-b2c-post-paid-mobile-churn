@@ -365,6 +365,27 @@ def vis_precision_recall_thereshold(y_test, y_test_predicted_prob):
     plt.title("Precision-Recall Curve with Thresholds")
     plt.legend(loc="best")
     plt.show()
+
+def vis_count_target_segment(target):
+    """
+    Bar plot of count of segments in target
+    Parameters:
+    -----------
+    target : column of dataframe, example : df['churn_segment']
+    """
+    plt.figure(figsize=(9, 2))
+    # Create the bar plot
+    ax = target.value_counts().plot(kind='barh', color=['lightgreen', 'red'])
+    # Add annotations
+    for p in ax.patches:
+        ax.annotate(f'{int(p.get_width())}', 
+                    (p.get_width(), p.get_height()/2+ p.get_y()), 
+                    )
+    # Labels and title
+    plt.title("Count of Churn Segments")
+    plt.xlabel("Churn Segment")
+    plt.ylabel("Count")
+    plt.show()
     
 
 class columnsFamilies:
