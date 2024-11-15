@@ -101,15 +101,9 @@ class StructuringPipeline:
         objective : string, "training" or "inference"
         """
         
-        if self.objective == "training":
-            how_to_join = "left"
-        elif self.objective == "inference":
-            how_to_join = "right"
-        else : 
-            raise ValueError("""objective parameter should be either "training" or "inference" """)
         #Get churners
         print ("Joining pivoted table with target table")
-        df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = how_to_join)   #TODO: how parameter was set to "left" during training, and right for "inference" 
+        df = pd.merge(churners_non_churners, pivoted_df, on="dn", how = "left")   #TODO: how parameter was set to "left" during training, and right for "inference" 
         logging.info("Joined pivoted table with target table successfully")
         return df
 
