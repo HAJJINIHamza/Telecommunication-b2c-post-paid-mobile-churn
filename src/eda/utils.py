@@ -386,10 +386,33 @@ def vis_count_target_segment(target):
     plt.xlabel("Churn Segment")
     plt.ylabel("Count")
     plt.show()
+
+def vis_data_distribution_of_acctual_and_predicted_target_with_tsne(x_test, y_test, y_test_pred):
+    """
+    Plots tow sides data ditribution labeled with target variable after applying tsne on data
+    On the left side the data distribution labeled with acctual target
+    On the right side the data distribution labeled with predited target
+    """
+    data_tsne = TSNE(n_components = 2, perplexity = 120).fit_transform(x_test)
+    data_tsne = pd.DataFrame(data_tsne, columns = ["x1", "x2"])
+    data_tsne["churn"] = y_test
+    data_tsne["churn_predicted"] = y_test_pred
+
+    #Plot
+    fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(10*2, 8))
+    print ("Applying tsne on data")
+    #Plot
+    print ("Ploting data distribution")
+    sns.set_theme()
+    sns.scatterplot(data = data_tsne, x="x1", y="x2", hue = "churn", ax=axes[0], palette=["lightgreen", "red"])
+    axes[0].set_title("Perplexity 120 TSNE data distribution of actual target")
+    sns.scatterplot(data = data_tsne, x="x1", y="x2", hue = "churn_predicted", ax=axes[1], palette=["lightgreen", "red"])
+    axes[1].set_title("Perplexity 120 TSNE data distribution of predicted target")
+    plt.show()
     
 
 class columnsFamilies:
-    
+
     def __init__(self, df):
         self.df = df
 
