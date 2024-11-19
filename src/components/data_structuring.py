@@ -118,7 +118,7 @@ class StructuringPipeline:
         5. Save resulting df in data/experiments_data
         """
         logging.info("#############################  Structuring Pipeline #############################")
-        print("merging and concatinating feature tables completed successfully")
+        print("merging and concatinating feature tables")
         df = self.merge_and_concat_features()
         logging.info("merging and concatinating feature tables completed successfully")
         print ("pivoting table")
