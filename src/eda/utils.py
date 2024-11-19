@@ -260,8 +260,8 @@ def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicte
     plt.figure(figsize=(4, 3))
     sns.heatmap(matrice_confusion/np.sum(matrice_confusion), annot=True, cmap="Blues", fmt=".2%")
     plt.title(f"Confusion matrix of model {model_name} on test data")
-    plt.xlabel("Acctual values")
-    plt.ylabel("Predicted values")
+    plt.xlabel("Predicted values")
+    plt.ylabel("Acctual values")
     plt.show()
 
     metrics = {}
@@ -274,7 +274,7 @@ def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicte
     plt.title(f"Confusion matrix of model {model_name} per class")
     plt.show()
 
-def vis_eval_metric(eval_hist, eval_metric):
+def vis_trainining_metric(eval_hist, eval_metric):
     """
     Plot logloss evolution of the training of a model
     Parameters
