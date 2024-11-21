@@ -140,22 +140,24 @@ class TrainingPipeline():
             pickle.dump(MODEL, f)
         logging.info("Saved model")
     
-    def run_training_pipeline(self, data_date, num_boosting_rounds, early_stopping_rounds, eval_metric="logloss"):
+    def run_training_pipeline(self, data_date, num_boosting_rounds, early_stopping_rounds, eval_metric="logloss", THRESHOLD = 0.5):
         """
 
         """
         x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test = self.load_data(data_date)
 
         XGB_MODEL, eval_hist, dtrain, ddev, dtest = self.train_model(x_train_norm, y_train, 
-                            x_dev_norm, y_dev, 
-                            x_test_norm, y_test, 
-                            num_boosting_round = num_boosting_rounds, 
-                            early_stopping_rounds = early_stopping_rounds, 
-                            eval_metric = eval_metric
-                            )
-        
+                                                                        x_dev_norm, y_dev, 
+                                                                        x_test_norm, y_test, 
+                                                                        num_boosting_round = num_boosting_rounds, 
+                                                                        early_stopping_rounds = early_stopping_rounds, 
+                                                                        eval_metric = eval_metric
+                                                                        )
+        self.evaluate_model(XGB_MODEL , eval_hist, y_train, y_test, dtrain, dtest, THRESHOLD )
+        return XGB_MODEL
 
-        #TODO: HAMZA COMPLETE THIS PIPELINE 
+        #TODO: HAMZA DEBUG THIS PIPELINE
+#END OF CLASS
         
 
         

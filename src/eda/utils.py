@@ -274,7 +274,7 @@ def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicte
     plt.title(f"Confusion matrix of model {model_name} per class")
     plt.show()
 
-def vis_trainining_metric(eval_hist, eval_metric):
+def vis_training_metric(eval_hist, eval_metric):
     """
     Plot logloss evolution of the training of a model
     Parameters
@@ -283,9 +283,13 @@ def vis_trainining_metric(eval_hist, eval_metric):
                 Example :{'train': OrderedDict([('logloss', [0.6880773933039434, 0.6831067101863765,....}
     eval_metric : string, the loss function that was optimized during training 
     """
-    #Extract loss
-    train_loss = eval_hist["train"][eval_metric]
-    dev_loss = eval_hist["dev"][eval_metric]
+    try:
+        train_loss = eval_hist["train_loss"]
+        dev_loss = eval_hist["dev_loss"]
+    except:
+        #Extract loss
+        train_loss = eval_hist["train"][eval_metric]
+        dev_loss = eval_hist["dev"][eval_metric]
     #Plot train dev loss
     sns.set_theme()
     plt.figure(figsize=(7, 4))
@@ -293,7 +297,7 @@ def vis_trainining_metric(eval_hist, eval_metric):
     plt.plot(dev_loss, label=f"Dev {eval_metric}", linestyle="--")
     plt.xlabel("Boosting rounds")
     plt.ylabel(f"{eval_metric}")
-    plt.title(f"Trian and dev {eval_metric} per boosing rounds")
+    plt.title(f"Trian and dev {eval_metric} per rounds/epochs")
     plt.legend()
     plt.show()
 
