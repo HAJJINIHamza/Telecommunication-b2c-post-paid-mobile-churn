@@ -26,11 +26,11 @@ class TrainingPipeline():
         Returns : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test
         """
         print ("Loading training data = x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test ...............................................")
-        x_train_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_train_norm.csv", index_col=0)
-        x_dev_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_dev_norm.csv", index_col=0)
+        x_train_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_train_norm.csv", index_col=0, nrows = 10000) #TODO: Delete nrows = 10000
+        x_dev_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_dev_norm.csv", index_col=0, nrows = 10000) #TODO: Delete nrows = 10000
         x_test_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_test_norm.csv", index_col=0)
-        y_train = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_train.csv", index_col=0)
-        y_dev = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_dev.csv", index_col=0)
+        y_train = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_train.csv", index_col=0, nrows = 10000)  #TODO: Delete nrows = 10000
+        y_dev = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_dev.csv", index_col=0, nrows = 10000)  #TODO: Delete nrows = 10000
         y_test = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_test.csv", index_col=0)
         print ("------------------")
         print (f"x_train shape : {x_train_norm.shape}")
@@ -97,7 +97,7 @@ class TrainingPipeline():
         logging.info("End of model training")
         return XGB_MODEL, eval_hist, dtrain, ddev, dtest
     
-    def evaluate_model(self, MODEL, eval_hist, y_train, y_test, dtrain, dtest, THRESHOLD = 0.5):
+    def evaluate_model(self, MODEL, eval_hist,x_test, y_train, y_test, dtrain, dtest, THRESHOLD = 0.5):
         """
         Generate a report about model evaluation and performances
         """
@@ -126,8 +126,11 @@ class TrainingPipeline():
         #Plot importance
         utils.plot_feature_importance(importance.values(), importance.keys(), model_type="xgboost", max_n_features=100, figsize=(20, 20))
 
+        print ("Plot number of correctly predicted scores and wrong ones")
+        utils.vis_count_mistakes_and_correct_scores(y_test.values.flatten(), y_test_pred, y_test_predicted_prob)
+
         print ("Plot data distribution of acctual and predicted target with tsne")
-        utils.vis_data_distribution_of_acctual_and_predicted_target_with_tsne
+        utils.vis_data_distribution_of_acctual_and_predicted_target_with_tsne(x_test, y_test, y_test_pred)
 
         print ("Precision recall curve for choosing the best thereshold")
         utils.vis_precision_recall_thereshold(y_test, y_test_predicted_prob)
@@ -142,7 +145,10 @@ class TrainingPipeline():
     
     def run_training_pipeline(self, data_date, num_boosting_rounds, early_stopping_rounds, eval_metric="logloss", THRESHOLD = 0.5):
         """
-
+        Training pipeline include these steps :
+        - load data : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test
+        - train xgboost model evaluate model with plots 
+        Returns : xgb model
         """
         x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test = self.load_data(data_date)
 
@@ -153,7 +159,7 @@ class TrainingPipeline():
                                                                         early_stopping_rounds = early_stopping_rounds, 
                                                                         eval_metric = eval_metric
                                                                         )
-        self.evaluate_model(XGB_MODEL , eval_hist, y_train, y_test, dtrain, dtest, THRESHOLD )
+        self.evaluate_model(XGB_MODEL , eval_hist, x_test_norm, y_train, y_test, dtrain, dtest, THRESHOLD )
         return XGB_MODEL
 
         #TODO: HAMZA DEBUG THIS PIPELINE

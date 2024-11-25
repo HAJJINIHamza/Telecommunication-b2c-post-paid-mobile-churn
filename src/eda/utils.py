@@ -413,6 +413,44 @@ def vis_data_distribution_of_acctual_and_predicted_target_with_tsne(x_test, y_te
     sns.scatterplot(data = data_tsne, x="x1", y="x2", hue = "churn_predicted", ax=axes[1], palette=["lightgreen", "red"])
     axes[1].set_title("Perplexity 120 TSNE data distribution of predicted target")
     plt.show()
+
+def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_prob, range = np.array(range(0, 10))*0.1):
+    """
+    Plot the number of correctly predicted score and numebr of wrong predicted scores
+    Parameters:
+    -----------
+    y_test : should be an array or list and not a dataframe
+    """
+    predicted_vector = pd.DataFrame({"y_test":y_test, "y_test_pred": y_test_pred, "y_test_predicted_prob":y_test_predicted_prob})
+
+    mistakes = {"range":[], "nbr_mistakes":[], "nbr_correct":[]}
+    for element in range:
+        element = round(element, 2)
+        # TODO: if element+0.1 == 1 insure value 1 is also included, for now score 1 doesn't exist
+        temporary_test_data = predicted_vector [(predicted_vector["y_test_predicted_prob"] < element+0.1) & (predicted_vector["y_test_predicted_prob"] >= element)]
+        mistakes["range"].append(f"range_{element}_{round(element+0.1, 2)}")  
+        nbr_mistakes = sum(abs(temporary_test_data["y_test"] - temporary_test_data["y_test_pred"]))
+        mistakes["nbr_mistakes"].append(nbr_mistakes)
+        mistakes["nbr_correct"].append(len(temporary_test_data["y_test"])-nbr_mistakes)
+    mistakes = pd.DataFrame(mistakes)
+
+    mistakes_melted = pd.melt(mistakes, id_vars="range", value_vars=["nbr_mistakes", "nbr_correct"],
+                        var_name="Type", value_name="Count")
+
+    # Plot the bar plot
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=mistakes_melted, x="range", y="Count", hue="Type", palette=["red", "lightgreen"])
+
+    # Add labels and title
+    plt.xlabel("Score ranges")
+    plt.ylabel("score_count")
+    plt.title("Number of mistakes and correct score predictions by range")
+    plt.xticks(rotation=45)
+    plt.legend(title="Type")
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
     
 
 class columnsFamilies:
