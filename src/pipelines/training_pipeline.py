@@ -26,11 +26,11 @@ class TrainingPipeline():
         Returns : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test
         """
         print ("Loading training data = x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test ...............................................")
-        x_train_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_train_norm.csv", index_col=0, nrows = 10000) #TODO: Delete nrows = 10000
-        x_dev_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_dev_norm.csv", index_col=0, nrows = 10000) #TODO: Delete nrows = 10000
+        x_train_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_train_norm.csv", index_col=0 ) #TODO: Delete nrows = 10000
+        x_dev_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_dev_norm.csv", index_col=0 ) #TODO: Delete nrows = 10000
         x_test_norm = pd.read_csv(f"{x_y_sets_path}/{data_date}_x_test_norm.csv", index_col=0)
-        y_train = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_train.csv", index_col=0, nrows = 10000)  #TODO: Delete nrows = 10000
-        y_dev = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_dev.csv", index_col=0, nrows = 10000)  #TODO: Delete nrows = 10000
+        y_train = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_train.csv", index_col=0)  #TODO: Delete nrows = 10000
+        y_dev = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_dev.csv", index_col=0 )  #TODO: Delete nrows = 10000
         y_test = pd.read_csv(f"{x_y_sets_path}/{data_date}_y_test.csv", index_col=0)
         print ("------------------")
         print (f"x_train shape : {x_train_norm.shape}")
@@ -50,6 +50,8 @@ class TrainingPipeline():
                     x_test_norm, y_test, 
                     num_boosting_round:int, 
                     early_stopping_rounds:int, 
+                    max_depth:int,
+                    learning_rate:int,
                     eval_metric = "logloss"):
         """
         Model training on imported data
@@ -59,6 +61,7 @@ class TrainingPipeline():
         eval_metric : string: logloss, auc or aucpr
         num_boosting_round : int: Equivalant to the number of estimators in xgboost or nbr of boosting rounds
         early_stopping_rounds : stop the training if the performance on eval data is not increasing after this number of rounds
+        max_depth : max depth of used estimators 
         """
         if eval_metric not in ["logloss", "auc", "aucpr"]:
             raise ValueError("""eval_metric parameter must be on of the elements of this list ["logloss", "auc", "aucpr"]""")
@@ -72,21 +75,22 @@ class TrainingPipeline():
         evals = [(dtrain, "train"), (ddev, "dev")]
         eval_hist = {}
         #Model parameters 
-        params_2 = {
+        #Model parameters 
+        params_1 = {
             'objective': 'binary:logistic',  
-            'eval_metric': eval_metric,     
+            'eval_metric': 'logloss',       
             'eta': 0.1,                     
-            'max_depth': 5,                  
+            'max_depth': max_depth,                  
             'subsample': 0.9,                 
             'colsample_bytree': 1,           
             'min_child_weight': 1,            
             'gamma': 0.1,                     
             'scale_pos_weight': 1,                        
-            'learning_rate': 0.01
+            'learning_rate': learning_rate
         }
         print ("Training xgboost model ...............................................")
         #Trianing model
-        XGB_MODEL = xgb.train( params = params_2,
+        XGB_MODEL = xgb.train( params = params_1,
                                 dtrain=dtrain,
                                 num_boost_round=num_boosting_round,
                                 evals=evals,
@@ -103,7 +107,7 @@ class TrainingPipeline():
         """
         #Plot log loss
         print ("Ploting train loss and dev loss ...............................................")
-        utils.vis_eval_metric(eval_hist, eval_metric="logloss")
+        utils.vis_training_metric(eval_hist, eval_metric="logloss")
         print ("Computing predictions on test data for evaluation...............................................")
         #Predictions
         y_test_predicted_prob = MODEL.predict(dtest)
@@ -143,13 +147,14 @@ class TrainingPipeline():
             pickle.dump(MODEL, f)
         logging.info("Saved model")
     
-    def run_training_pipeline(self, data_date, num_boosting_rounds, early_stopping_rounds, eval_metric="logloss", THRESHOLD = 0.5):
+    def run_training_pipeline(self, data_date, num_boosting_rounds, early_stopping_rounds, max_depth, learning_rate, eval_metric="logloss", THRESHOLD = 0.5):
         """
         Training pipeline include these steps :
         - load data : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test
         - train xgboost model evaluate model with plots 
         Returns : xgb model
         """
+        logging.info("############################# Running training pipeline #############################")
         x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test = self.load_data(data_date)
 
         XGB_MODEL, eval_hist, dtrain, ddev, dtest = self.train_model(x_train_norm, y_train, 
@@ -157,6 +162,8 @@ class TrainingPipeline():
                                                                         x_test_norm, y_test, 
                                                                         num_boosting_round = num_boosting_rounds, 
                                                                         early_stopping_rounds = early_stopping_rounds, 
+                                                                        max_depth = max_depth,
+                                                                        learning_rate = learning_rate,
                                                                         eval_metric = eval_metric
                                                                         )
         self.evaluate_model(XGB_MODEL , eval_hist, x_test_norm, y_train, y_test, dtrain, dtest, THRESHOLD )

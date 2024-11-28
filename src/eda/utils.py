@@ -42,6 +42,8 @@ def vis_perc_missing_values_per_column(df: DataFrame, figsize=(15,4)):
 def vis_target_distribution(target, figsize=(18, 6)):
     """
     This function plot a cercle representing the distribution of the target feature
+    Parameters:
+    -----------
     target:the target column, example: df["churn_segment"]
     """
     
@@ -49,7 +51,7 @@ def vis_target_distribution(target, figsize=(18, 6)):
     churn_segments = target.value_counts().index
     percentages = [ (value/len(target))*100 for value in target.value_counts().to_list() ]
     #Visualize percentages
-    fig, ax1 = plt.subplots(1, figsize=figsize)
+    _, ax1 = plt.subplots(1, figsize=figsize)
     ax1.pie(percentages, labels=churn_segments, autopct='%1.1f%%', startangle=140)
     plt.title("target distribution")
     plt.show()
@@ -395,10 +397,16 @@ def vis_data_distribution_of_acctual_and_predicted_target_with_tsne(x_test, y_te
     """
     Plots tow sides data ditribution labeled with target variable after applying tsne on data
     On the left side the data distribution labeled with acctual target
-    On the right side the data distribution labeled with predited target
+    On the right side the data distribution labeled with predicted target
+    Parameters:
+    -----------
+    y_test and y_test_pred: should be list of elements
     """
     data_tsne = TSNE(n_components = 2, perplexity = 120).fit_transform(x_test)
     data_tsne = pd.DataFrame(data_tsne, columns = ["x1", "x2"])
+    #if y_test is a dataframe transform it to an array 
+    if type(y_test) == pd.core.frame.DataFrame:
+        y_test = y_test.values
     data_tsne["churn"] = y_test
     data_tsne["churn_predicted"] = y_test_pred
 

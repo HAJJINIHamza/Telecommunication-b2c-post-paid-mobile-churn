@@ -29,14 +29,17 @@ class DataTransformation:
         Returns a dataframe after concatinating all the samples
         """
         try :
-            nbr_non_churners = 150000
-            nbr_inactif_churners = 140000
-            nbr_churn_operateur = 10602
+            max_nbr_of_non_churners = len (self.df[self.df["churn_segment"].isin(["non_churners"])])
+            max_nbr_of_inactif_churners = len (self.df[self.df["churn_segment"].isin(["inactif_unknown_churners"])])
+            max_nbr_of_churn_operateur = len (self.df[self.df["churn_segment"].isin(["churn_operateur_actif"])])
+            nbr_non_churners = min(210000, max_nbr_of_non_churners)
+            nbr_inactif_churners = min (200000, max_nbr_of_inactif_churners)
+            nbr_churn_operateur = min(10602, max_nbr_of_churn_operateur)
 
             print ("Sampling data based on churn segement .......................................................")
-            print (f"nbr_non_churners {nbr_non_churners} .......................................................")
-            print (f"nbr_inactif_churners {nbr_inactif_churners} .......................................................")
-            print (f"nbr_churn_operateur {nbr_churn_operateur} .......................................................")
+            print (f"max nbr of non_churners {max_nbr_of_non_churners} select nbr_non_churners {nbr_non_churners} ...........................")
+            print (f"max nbr of inactif unknown churners {max_nbr_of_inactif_churners} selected nbr_inactif_churners {nbr_inactif_churners} ......")
+            print (f"max nbr of nbr_churn_operateur {max_nbr_of_churn_operateur} selected nbr_churn_operateur {nbr_churn_operateur} ........")
 
             df_non_churners = self.df[self.df["churn_segment"].isin(["non_churners"])].sample(n=nbr_non_churners, random_state=42)
             df_inactif_churners = self.df[self.df["churn_segment"].isin(["inactif_unknown_churners"])].sample(n=nbr_inactif_churners, random_state=42)
@@ -60,7 +63,7 @@ class DataTransformation:
         target_list = [0 if churn_segment == "non_churners" else 1 for churn_segment in df["churn_segment"]]
         df['churn'] = target_list
         logging.info("Successfully created churn target from churn segment")
-        return self.df
+        return df
     
     
     #Train test split 
@@ -70,19 +73,23 @@ class DataTransformation:
         df_dev, df_test  = train_test_split(df_dev, train_size = 0.7, random_state = 42, shuffle = True, stratify = df_dev["churn"])
 
         #Take only a sample of test and train data
-        #n_dev_set = 25000
-        #n_test_set = 10000
-        #df_dev = df_dev.sample(n=n_dev_set, random_state=42)
-        #df_test = df_test.sample(n=n_test_set, random_state=42)
+        n_train_set = 250000
+        n_dev_set = 25000
+        n_test_set = 10000
+        print ("Taking samples from train, dev and test sets .......................................................")
+        df_train = df_train.sample(n=min(n_train_set, len(df_train)), random_state=42)
+        df_dev = df_dev.sample(n= min(n_dev_set, len(df_dev)), random_state=42)
+        df_test = df_test.sample(n=min(n_test_set, len(df_test)), random_state=42)
 
         print (f"df_train shape :{df_train.shape} .......................................................")
         print (f"df_dev shape: {df_dev.shape} .......................................................")
         print (f"df_test shape: {df_test.shape} .......................................................")
 
         logging.info("Succefully splited data into train dev and test sets")
-        logging.info (f"df_train shape :{df_train.shape}")
-        logging.info (f"df_dev shape: {df_dev.shape}")
-        logging.info (f"df_test shape: {df_test.shape}")
+        logging.info("Selected samples from train dev and test sets")
+        logging.info(f"df_train shape :{df_train.shape}")
+        logging.info(f"df_dev shape: {df_dev.shape}")
+        logging.info(f"df_test shape: {df_test.shape}")
 
         return df_train, df_dev, df_test 
     
@@ -91,10 +98,10 @@ class DataTransformation:
         Run transformation pipeline
         Returns : df_train, df_dev, df_test
         """
-        #df = self.sample_data_by_churn_segment()       #TODO: we need to sample data by churn segment only in training pipeline
-        df = self.get_churn_target_from_churn_segment(self.df)
+        df = self.sample_data_by_churn_segment()       #TODO: we need to sample data by churn segment only in training pipeline
+        df = self.get_churn_target_from_churn_segment(df)
         df_train, df_dev, df_test = self.get_train_dev_test_sets(df)
-        save_train_dev_test_sets(df_train, df_dev, df_test)
+        #save_train_dev_test_sets(df_train, df_dev, df_test)    #For now don't save at this point
         return df_train, df_dev, df_test
 #END OF CLASS
 
@@ -123,9 +130,9 @@ class FeatureSelection:
         print ("Selecting inference featrues from df .......................................................")
         with open("models/ressources/2024-10-25_inference_feature_names.txt", "r") as f:
             feature_names = ast.literal_eval(f.read())
-        df = df[feature_names]
+        df_new = df[feature_names]
         logging.info("Selected inference features from df")
-        return df
+        return df_new
         
     def run_feature_selection(self, df_train, df_dev, df_test):
         """
@@ -164,22 +171,7 @@ class HandlingMissingValues:
         logging.info("Successfully loaded train dev and test sets for handling missing values")
         return df_train, df_dev, df_test
     """    
-    
-    def replace_0_values_with_nan(self):
-        #Get numerical columns from df
-        df_numerical_columns = self.df_train.dtypes[self.df_train.dtypes != "object" ].index.to_list()
-        df_numerical_columns = [ column for column in df_numerical_columns if column not in ["dn", "dn_group_id", "churn" ]]
-        
-        print ("Replacing 0 values with nan, in df_train, df_dev and df_test .......................................................")
-        self.df_train[df_numerical_columns] = self.df_train[df_numerical_columns].replace(0, np.nan)
-        self.df_dev[df_numerical_columns] = self.df_dev[df_numerical_columns].replace(0, np.nan)
-        self.df_test[df_numerical_columns] = self.df_test[df_numerical_columns].replace(0, np.nan)
-        logging.info("Successfully replaced 0 values with nan, in df_train, df_dev and df_test")
-        print (f"Are still there any 0 values in df_train after transforming 0 values into nan : {(self.df_train[df_numerical_columns] == 0).any().any()}...... ")
-
-        return self.df_train, self.df_dev, self.df_test 
-    
-    def drop_columns_and_rows_with_all_values_null(self, df_train, df_dev, df_test, threshold=99):
+    def drop_columns_and_rows_with_all_values_null(self, threshold=99):
         """
         Drop columns and rows where nan values percentage is bigger than thereshold
         """
@@ -193,15 +185,15 @@ class HandlingMissingValues:
         #logging.info("Droped all columns with all values nulles")
 
         print ("Deleting all null rows from train dev and test sets")
-        df_train_T = df_train.T
+        df_train_T = self.df_train.T
         df_train_T=drop_df_null_columns(df_train_T, threshold=threshold)
         df_train = df_train_T.T
         print ("Drop all null rows of df_dev")
-        df_dev_T = df_dev.T
+        df_dev_T = self.df_dev.T
         df_dev_T=drop_df_null_columns(df_dev_T, threshold=threshold)
         df_dev = df_dev_T.T
         print ("Drop all null rows of df_test")
-        df_test_T = df_test.T
+        df_test_T = self.df_test.T
         df_test_T=drop_df_null_columns(df_test_T, threshold=threshold)
         df_test = df_test_T.T
         logging.info("Droped all rows with all values nulles")
@@ -211,6 +203,20 @@ class HandlingMissingValues:
         print(f"df_test shape : {df_test.shape} .......................................................")
 
         return df_train, df_dev, df_test
+    
+    def replace_0_values_with_nan(self, df_train, df_dev, df_test):
+        #Get numerical columns from df
+        df_numerical_columns = df_train.dtypes[df_train.dtypes != "object" ].index.to_list()
+        df_numerical_columns = [ column for column in df_numerical_columns if column not in ["dn", "dn_group_id", "churn" ]]
+        
+        print ("Replacing 0 values with nan, in df_train, df_dev and df_test .......................................................")
+        df_train[df_numerical_columns] = df_train[df_numerical_columns].replace(0, np.nan)
+        df_dev[df_numerical_columns] = df_dev[df_numerical_columns].replace(0, np.nan)
+        df_test[df_numerical_columns] = df_test[df_numerical_columns].replace(0, np.nan)
+        logging.info("Successfully replaced 0 values with nan, in df_train, df_dev and df_test")
+        print (f"Are still there any 0 values in df_train after transforming 0 values into nan : {(df_train[df_numerical_columns] == 0).any().any()}...... ")
+
+        return df_train, df_dev, df_test 
     
     def run_handling_missing_values(self):
         """
@@ -222,8 +228,8 @@ class HandlingMissingValues:
         """
         #df_train, df_dev, df_test = self.load_train_dev_test()
         #df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
-        df_train, df_dev, df_test = self.replace_0_values_with_nan()
-        df_train, df_dev, df_test = self.drop_columns_and_rows_with_all_values_null(df_train, df_dev, df_test)
+        df_train, df_dev, df_test = self.drop_columns_and_rows_with_all_values_null()
+        df_train, df_dev, df_test = self.replace_0_values_with_nan(df_train, df_dev, df_test)
         print ("filling all NAN with 0, in train dev and test sets .......................................................")
         df_train = df_train.fillna(0)
         df_dev = df_dev.fillna(0)
@@ -231,6 +237,42 @@ class HandlingMissingValues:
         logging.info("Filled all NAN values with 0, in train dev and test sets")
         print (f"Total number of missing values in df_train after filling all nan with 0 is : {df_train.isna().sum().sum()}...........................")
         save_train_dev_test_sets(df_train, df_dev, df_test, name_sufix="_fillna_0")
+        return df_train, df_dev, df_test
+#END OF CLASS
+
+class HandlingDuplicatedValues:
+    def __init__(self):
+        pass
+
+    def drop_duplicated_values(self, df):
+        """
+        Declare number of duplicates in df and drop them
+
+        returns df 
+        """
+        principal_feature_names = [col for col in df.columns if col not in ['dn', 'churn_segment','churn_date', 'activation_bscs_date','id_date']]
+        print ("""Dropped columns : ['dn','churn_segment','churn_date', 'activation_bscs_date','id_date'] from df""")
+        df_new = df[principal_feature_names]
+        logging.info("""Dropped columns : ['dn','churn_segment','churn_date', 'activation_bscs_date','id_date'] from df""")
+        print (f"Number of duplicates in df {df_new.duplicated().sum()}")
+        print ("Dropping duplcated values")
+        df_new = df_new.drop_duplicates()
+        logging.info("Dropped all duplicated values successfully")
+        return df_new
+    
+    def run_handling_duplicates(self, df_train, df_dev, df_test):
+        """
+        Drop all duplicated values in train, dev and test sets
+
+        Returns : df_train, df_dev, df_test
+        """
+        print ("df_train")
+        df_train = self.drop_duplicated_values(df_train)
+        print ("df_dev")
+        df_dev = self.drop_duplicated_values(df_dev)
+        print ("df_test")
+        df_test = self.drop_duplicated_values(df_test)
+        logging.info("Droped duplicated values in train, dev and test sets successfully")
         return df_train, df_dev, df_test
 #END OF CLASS
 
@@ -387,12 +429,14 @@ def run_training_data_processing_pipeline(df):
     - Feature Encoding
     - Data Splitting
     - Data Normalization
+    - Save data 
     Returns : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test 
     """
     logging.info("############################# Running training data processing pipeline #############################")
     df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
     df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)
     df_train, df_dev, df_test = HandlingMissingValues(df_train, df_dev, df_test).run_handling_missing_values()
+    df_train, df_dev, df_test = HandlingDuplicatedValues().run_handling_duplicates(df_train, df_dev, df_test)
     df_train, df_dev, df_test = FeatureEncoding().run_feature_encoding(df_train, df_dev, df_test)
     x_train, y_train, x_dev, y_dev, x_test, y_test = DataSplitting().run_data_splitting(df_train, df_dev, df_test)
     print ("Saving y_train.......................................................")
