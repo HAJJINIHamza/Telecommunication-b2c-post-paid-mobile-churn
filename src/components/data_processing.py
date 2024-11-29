@@ -32,8 +32,8 @@ class DataTransformation:
             max_nbr_of_non_churners = len (self.df[self.df["churn_segment"].isin(["non_churners"])])
             max_nbr_of_inactif_churners = len (self.df[self.df["churn_segment"].isin(["inactif_unknown_churners"])])
             max_nbr_of_churn_operateur = len (self.df[self.df["churn_segment"].isin(["churn_operateur_actif"])])
-            nbr_non_churners = min(210000, max_nbr_of_non_churners)
-            nbr_inactif_churners = min (200000, max_nbr_of_inactif_churners)
+            nbr_non_churners = min(243000, max_nbr_of_non_churners)
+            nbr_inactif_churners = min (233097, max_nbr_of_inactif_churners)
             nbr_churn_operateur = min(10602, max_nbr_of_churn_operateur)
 
             print ("Sampling data based on churn segement .......................................................")
@@ -69,12 +69,12 @@ class DataTransformation:
     #Train test split 
     def get_train_dev_test_sets(self, df:pd.DataFrame):
         print ("Train, dev and test Spliting .......................................................")
-        df_train, df_dev = train_test_split(df, train_size = 0.7, random_state = 42, shuffle = True, stratify = df["churn"] )
+        df_train, df_dev = train_test_split(df, train_size = 0.85, random_state = 42, shuffle = True, stratify = df["churn"] )
         df_dev, df_test  = train_test_split(df_dev, train_size = 0.7, random_state = 42, shuffle = True, stratify = df_dev["churn"])
 
         #Take only a sample of test and train data
         n_train_set = 250000
-        n_dev_set = 25000
+        n_dev_set = 20000
         n_test_set = 10000
         print ("Taking samples from train, dev and test sets .......................................................")
         df_train = df_train.sample(n=min(n_train_set, len(df_train)), random_state=42)
@@ -96,6 +96,7 @@ class DataTransformation:
     def run_data_transformation(self):
         """
         Run transformation pipeline
+
         Returns : df_train, df_dev, df_test
         """
         df = self.sample_data_by_churn_segment()       #TODO: we need to sample data by churn segment only in training pipeline
@@ -171,29 +172,29 @@ class HandlingMissingValues:
         logging.info("Successfully loaded train dev and test sets for handling missing values")
         return df_train, df_dev, df_test
     """    
-    def drop_columns_and_rows_with_all_values_null(self, threshold=99):
+    def drop_columns_and_rows_with_all_values_null(self, threshold=97):
         """
         Drop columns and rows where nan values percentage is bigger than thereshold
         """
-        #Drop columns with all values null                                  #THIS PART IS ON COMMENT BECAUSE NULL COLUMNS WILL BE TRAITED IN FEATURE SELECTION
-        #print ("Deleting all df_train null columns")
-        #df_train = drop_df_null_columns(df_train, threshold = threshold)
+        """        #Drop columns with all values null                                  #THIS PART IS ON COMMENT BECAUSE NULL COLUMNS WILL BE TRAITED IN FEATURE SELECTION
+        print ("Deleting all df_train null columns")
+        df_train = drop_df_null_columns(self.df_train, threshold = threshold)
         #Take same columns as df_train
-        #print ("Taking same columns as df_train in df_dev and df_test")
-        #df_dev = df_dev[df_train.columns]
-        #df_test = df_test[df_train.columns]
-        #logging.info("Droped all columns with all values nulles")
+        print ("Taking same columns as df_train in df_dev and df_test")
+        df_dev = self.df_dev[df_train.columns]
+        df_test = self.df_test[df_train.columns]
+        logging.info("Droped all columns with all values nulles")"""
 
         print ("Deleting all null rows from train dev and test sets")
-        df_train_T = self.df_train.T
+        df_train_T = self.df_train.T     
         df_train_T=drop_df_null_columns(df_train_T, threshold=threshold)
         df_train = df_train_T.T
         print ("Drop all null rows of df_dev")
-        df_dev_T = self.df_dev.T
+        df_dev_T = self.df_dev.T         
         df_dev_T=drop_df_null_columns(df_dev_T, threshold=threshold)
         df_dev = df_dev_T.T
         print ("Drop all null rows of df_test")
-        df_test_T = self.df_test.T
+        df_test_T = self.df_test.T       
         df_test_T=drop_df_null_columns(df_test_T, threshold=threshold)
         df_test = df_test_T.T
         logging.info("Droped all rows with all values nulles")
@@ -218,7 +219,7 @@ class HandlingMissingValues:
 
         return df_train, df_dev, df_test 
     
-    def run_handling_missing_values(self):
+    def run_handling_missing_values(self, save_final_data = True):
         """
         Returns df_train, df_dev and df_test after applying these steps:
         - Replace all 0 values with nan
@@ -236,7 +237,8 @@ class HandlingMissingValues:
         df_test = df_test.fillna(0)
         logging.info("Filled all NAN values with 0, in train dev and test sets")
         print (f"Total number of missing values in df_train after filling all nan with 0 is : {df_train.isna().sum().sum()}...........................")
-        save_train_dev_test_sets(df_train, df_dev, df_test, name_sufix="_fillna_0")
+        if save_final_data == True:
+            save_train_dev_test_sets(df_train, df_dev, df_test, name_sufix="_fillna_0")
         return df_train, df_dev, df_test
 #END OF CLASS
 
@@ -360,7 +362,7 @@ class DataNormalization:
         logging.info("Normalized data")
         return df_norm
 
-    def run_data_normalization(self, x_train, x_dev, x_test):
+    def run_data_normalization(self, x_train, x_dev, x_test, save_final_data = True):
         """
         Run normalization on x_train, x_dev and x_test
         returns : x_train_norm, x_dev_norm, x_test_norm
@@ -372,13 +374,14 @@ class DataNormalization:
         print ("x_test.......................................................")
         x_test_norm = self.normalize_data(x_test)
         logging.info("Successfully normalized x_train, x_dev, x_test")
-        print ("Saving x_train_norm.......................................................")
-        x_train_norm.to_csv(f"{x_y_sets_path}/{date_time}_x_train_norm.csv", index=True)
-        print ("Saving x_dev_norm.......................................................")
-        x_dev_norm.to_csv(f"{x_y_sets_path}/{date_time}_x_dev_norm.csv", index=True)
-        print ("Saving x_test_norm.......................................................")
-        x_test_norm.to_csv(f"{x_y_sets_path}/{date_time}_x_test_norm.csv", index=True)
-        logging.info("Successfully saved x_train_norm, x_dev_norm and x_test_norm")
+        if save_final_data == True:
+            print ("Saving x_train_norm.......................................................")
+            x_train_norm.to_csv(f"{x_y_sets_path}/{date_time}_x_train_norm.csv", index=True)
+            print ("Saving x_dev_norm.......................................................")
+            x_dev_norm.to_csv(f"{x_y_sets_path}/{date_time}_x_dev_norm.csv", index=True)
+            print ("Saving x_test_norm.......................................................")
+            x_test_norm.to_csv(f"{x_y_sets_path}/{date_time}_x_test_norm.csv", index=True)
+            logging.info("Successfully saved x_train_norm, x_dev_norm and x_test_norm")
         return x_train_norm, x_dev_norm, x_test_norm
 #END OF CLASS       
 
@@ -420,7 +423,7 @@ def drop_df_null_columns(df, threshold = 99):
     return df
 #######################################################################################################################
 
-def run_training_data_processing_pipeline(df):
+def run_training_data_processing_pipeline(df, save_final_data=True):
     """
     Applies these steps on df:
     - Data Transformation
@@ -434,8 +437,8 @@ def run_training_data_processing_pipeline(df):
     """
     logging.info("############################# Running training data processing pipeline #############################")
     df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
-    df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)
-    df_train, df_dev, df_test = HandlingMissingValues(df_train, df_dev, df_test).run_handling_missing_values()
+    df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)                
+    df_train, df_dev, df_test = HandlingMissingValues(df_train, df_dev, df_test).run_handling_missing_values(save_final_data = False)
     df_train, df_dev, df_test = HandlingDuplicatedValues().run_handling_duplicates(df_train, df_dev, df_test)
     df_train, df_dev, df_test = FeatureEncoding().run_feature_encoding(df_train, df_dev, df_test)
     x_train, y_train, x_dev, y_dev, x_test, y_test = DataSplitting().run_data_splitting(df_train, df_dev, df_test)
@@ -446,8 +449,14 @@ def run_training_data_processing_pipeline(df):
     print ("Saving y_test.......................................................")
     y_test.to_csv(f"{x_y_sets_path}/{date_time}_y_test.csv", index=True)
     logging.info("Saved y_train, y_dev and y_test")
-    x_train_norm, x_dev_norm, x_test_norm = DataNormalization().run_data_normalization(x_train, x_dev, x_test)
+
+    nbr_rows_with_only_zeros = (x_train == 0).all(axis=1).sum()
+    print (f"Nbr of rows with only zeros is : {nbr_rows_with_only_zeros}")
+    logging.info(f"Nbr of rows with only zeros is : {nbr_rows_with_only_zeros}")
+
+    x_train_norm, x_dev_norm, x_test_norm = DataNormalization().run_data_normalization(x_train, x_dev, x_test, save_final_data=save_final_data)
     return x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test 
+
 
 def run_inference_data_processing_pipeline(df, batch_date):
     """

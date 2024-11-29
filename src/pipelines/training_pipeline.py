@@ -101,7 +101,7 @@ class TrainingPipeline():
         logging.info("End of model training")
         return XGB_MODEL, eval_hist, dtrain, ddev, dtest
     
-    def evaluate_model(self, MODEL, eval_hist,x_test, y_train, y_test, dtrain, dtest, THRESHOLD = 0.5):
+    def evaluate_model(self, MODEL, eval_hist,x_test, y_train, y_test, dtrain, dtest, THRESHOLD):
         """
         Generate a report about model evaluation and performances
         """
@@ -151,7 +151,9 @@ class TrainingPipeline():
         """
         Training pipeline include these steps :
         - load data : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test
-        - train xgboost model evaluate model with plots 
+        - train xgboost model 
+        - evaluate model with plots 
+        
         Returns : xgb model
         """
         logging.info("############################# Running training pipeline #############################")
@@ -166,7 +168,7 @@ class TrainingPipeline():
                                                                         learning_rate = learning_rate,
                                                                         eval_metric = eval_metric
                                                                         )
-        self.evaluate_model(XGB_MODEL , eval_hist, x_test_norm, y_train, y_test, dtrain, dtest, THRESHOLD )
+        self.evaluate_model(XGB_MODEL , eval_hist, x_test_norm, y_train, y_test, dtrain, dtest, THRESHOLD)
         return XGB_MODEL
 
         #TODO: HAMZA DEBUG THIS PIPELINE
