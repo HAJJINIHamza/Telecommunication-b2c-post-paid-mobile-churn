@@ -142,6 +142,12 @@ class TrainingPipeline():
         logging.info("Evaluated model and reproted its performances ")
     
     def save_model(self, MODEL, model_name):
+        """
+        Saves models
+        Parameters:
+        -----------
+        model_name: something like xgb_model
+        """
         print ("Saving model ...............................................")
         with open(f"{models_path}/{date_time}_{model_name}.pkl", "wb") as f:
             pickle.dump(MODEL, f)
@@ -153,8 +159,9 @@ class TrainingPipeline():
         - load data : x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test
         - train xgboost model 
         - evaluate model with plots 
-        
-        Returns : xgb model
+
+        Returns : xgb model, eval_hist, x_test_norm, y_train, y_test, dtrain, dtest
+        The outputs : eval_hist, x_test_norm, y_train, y_test, dtrain, dtest is meant to be reused in the evaluate model
         """
         logging.info("############################# Running training pipeline #############################")
         x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test = self.load_data(data_date)
@@ -169,7 +176,7 @@ class TrainingPipeline():
                                                                         eval_metric = eval_metric
                                                                         )
         self.evaluate_model(XGB_MODEL , eval_hist, x_test_norm, y_train, y_test, dtrain, dtest, THRESHOLD)
-        return XGB_MODEL
+        return XGB_MODEL, eval_hist, x_test_norm, y_train, y_test, dtrain, dtest
 
         #TODO: HAMZA DEBUG THIS PIPELINE
 #END OF CLASS

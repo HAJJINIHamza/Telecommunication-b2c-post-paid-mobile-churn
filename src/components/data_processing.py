@@ -69,12 +69,12 @@ class DataTransformation:
     #Train test split 
     def get_train_dev_test_sets(self, df:pd.DataFrame):
         print ("Train, dev and test Spliting .......................................................")
-        df_train, df_dev = train_test_split(df, train_size = 0.85, random_state = 42, shuffle = True, stratify = df["churn"] )
+        df_train, df_dev = train_test_split(df, train_size = 0.89, random_state = 42, shuffle = True, stratify = df["churn"] )
         df_dev, df_test  = train_test_split(df_dev, train_size = 0.7, random_state = 42, shuffle = True, stratify = df_dev["churn"])
 
         #Take only a sample of test and train data
-        n_train_set = 250000
-        n_dev_set = 20000
+        n_train_set = 440000
+        n_dev_set = 30000
         n_test_set = 10000
         print ("Taking samples from train, dev and test sets .......................................................")
         df_train = df_train.sample(n=min(n_train_set, len(df_train)), random_state=42)
@@ -99,10 +99,17 @@ class DataTransformation:
 
         Returns : df_train, df_dev, df_test
         """
-        df = self.sample_data_by_churn_segment()       #TODO: we need to sample data by churn segment only in training pipeline
+        df = self.sample_data_by_churn_segment()       # TODO: we need to sample data by churn segment only in training pipeline
         df = self.get_churn_target_from_churn_segment(df)
         df_train, df_dev, df_test = self.get_train_dev_test_sets(df)
         #save_train_dev_test_sets(df_train, df_dev, df_test)    #For now don't save at this point
+        #!!!!! Delete some non churners from the training data for better training
+        nbr_of_non_churners_to_drop = 80000            # NOTE: This part will drop the given number on non churners from training data
+        print(f"Drop {nbr_of_non_churners_to_drop} rows of non_churners from df_train .......................................................")
+        indexes_to_be_deleted = df_train[df_train['churn'] == 0].index[:nbr_of_non_churners_to_drop]
+        indexes = df_train.index.difference (indexes_to_be_deleted)
+        df_train = df_train.loc[indexes]
+        logging.info(f"Drop {nbr_of_non_churners_to_drop} rows of non_churners from df_train")
         return df_train, df_dev, df_test
 #END OF CLASS
 
@@ -186,15 +193,15 @@ class HandlingMissingValues:
         logging.info("Droped all columns with all values nulles")"""
 
         print ("Deleting all null rows from train dev and test sets")
-        df_train_T = self.df_train.T     
+        df_train_T = self.df_train.T            
         df_train_T=drop_df_null_columns(df_train_T, threshold=threshold)
         df_train = df_train_T.T
         print ("Drop all null rows of df_dev")
-        df_dev_T = self.df_dev.T         
+        df_dev_T = self.df_dev.T                 
         df_dev_T=drop_df_null_columns(df_dev_T, threshold=threshold)
         df_dev = df_dev_T.T
         print ("Drop all null rows of df_test")
-        df_test_T = self.df_test.T       
+        df_test_T = self.df_test.T           
         df_test_T=drop_df_null_columns(df_test_T, threshold=threshold)
         df_test = df_test_T.T
         logging.info("Droped all rows with all values nulles")
@@ -219,13 +226,16 @@ class HandlingMissingValues:
 
         return df_train, df_dev, df_test 
     
-    def run_handling_missing_values(self, save_final_data = True):
+    def run_handling_missing_values(self, save_final_data = False):
         """
         Returns df_train, df_dev and df_test after applying these steps:
         - Replace all 0 values with nan
         - Drop all columns and rows with all values null 
         - Replace all nan values with 0
-        - Save dataframes
+        - Save dataframes if save_final_data is True
+        Parameters:
+        -----------
+        save_final_data : Boolean, save or not the final output data
         """
         #df_train, df_dev, df_test = self.load_train_dev_test()
         #df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
@@ -248,7 +258,7 @@ class HandlingDuplicatedValues:
 
     def drop_duplicated_values(self, df):
         """
-        Declare number of duplicates in df and drop them
+        Declare number of duplicates in df and drop theme
 
         returns df 
         """
@@ -365,7 +375,12 @@ class DataNormalization:
     def run_data_normalization(self, x_train, x_dev, x_test, save_final_data = True):
         """
         Run normalization on x_train, x_dev and x_test
+
         returns : x_train_norm, x_dev_norm, x_test_norm
+        Parameters:
+        -----------
+        x_train, x_dev, x_test : dataframes
+        save_final_data : Boolean, save or not the final output data
         """
         print ("x_train.......................................................")
         x_train_norm = self.normalize_data(x_train)
@@ -437,7 +452,7 @@ def run_training_data_processing_pipeline(df, save_final_data=True):
     """
     logging.info("############################# Running training data processing pipeline #############################")
     df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
-    df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)                
+    df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)       # TODO: Undash this part after experiments          
     df_train, df_dev, df_test = HandlingMissingValues(df_train, df_dev, df_test).run_handling_missing_values(save_final_data = False)
     df_train, df_dev, df_test = HandlingDuplicatedValues().run_handling_duplicates(df_train, df_dev, df_test)
     df_train, df_dev, df_test = FeatureEncoding().run_feature_encoding(df_train, df_dev, df_test)
@@ -454,8 +469,9 @@ def run_training_data_processing_pipeline(df, save_final_data=True):
     print (f"Nbr of rows with only zeros is : {nbr_rows_with_only_zeros}")
     logging.info(f"Nbr of rows with only zeros is : {nbr_rows_with_only_zeros}")
 
-    x_train_norm, x_dev_norm, x_test_norm = DataNormalization().run_data_normalization(x_train, x_dev, x_test, save_final_data=save_final_data)
-    return x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test 
+    x_train_norm, x_dev_norm, x_test_norm = DataNormalization().run_data_normalization(x_train, x_dev, x_test, save_final_data=save_final_data) # TODO: Undash this part after experiments 
+    return x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test           # TODO: Undash this part after experiments 
+
 
 
 def run_inference_data_processing_pipeline(df, batch_date):
