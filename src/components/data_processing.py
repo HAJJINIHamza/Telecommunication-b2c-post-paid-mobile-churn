@@ -159,10 +159,9 @@ class FeatureSelection:
 
     
 class HandlingMissingValues:
-    def __init__(self, df_train, df_dev, df_test):
-        self.df_train = df_train
-        self.df_dev = df_dev
-        self.df_test = df_test
+    def __init__(self):
+            pass
+    
     """
     #Need this function only when data is not passed as inputs want to load data 
     def load_train_dev_test(self, data_date):
@@ -179,7 +178,7 @@ class HandlingMissingValues:
         logging.info("Successfully loaded train dev and test sets for handling missing values")
         return df_train, df_dev, df_test
     """    
-    def drop_columns_and_rows_with_all_values_null(self, threshold=97):
+    def drop_columns_and_rows_with_all_values_null(self, df_train, df_dev, df_test, threshold=97):
         """
         Drop columns and rows where nan values percentage is bigger than thereshold
         """
@@ -193,15 +192,15 @@ class HandlingMissingValues:
         logging.info("Droped all columns with all values nulles")"""
 
         print ("Deleting all null rows from train dev and test sets")
-        df_train_T = self.df_train.T            
+        df_train_T = df_train.T            
         df_train_T=drop_df_null_columns(df_train_T, threshold=threshold)
         df_train = df_train_T.T
         print ("Drop all null rows of df_dev")
-        df_dev_T = self.df_dev.T                 
+        df_dev_T = df_dev.T                 
         df_dev_T=drop_df_null_columns(df_dev_T, threshold=threshold)
         df_dev = df_dev_T.T
         print ("Drop all null rows of df_test")
-        df_test_T = self.df_test.T           
+        df_test_T = df_test.T           
         df_test_T=drop_df_null_columns(df_test_T, threshold=threshold)
         df_test = df_test_T.T
         logging.info("Droped all rows with all values nulles")
@@ -226,7 +225,7 @@ class HandlingMissingValues:
 
         return df_train, df_dev, df_test 
     
-    def run_handling_missing_values(self, save_final_data = False):
+    def run_handling_missing_values(self, df_train, df_dev, df_test, save_final_data = False):
         """
         Returns df_train, df_dev and df_test after applying these steps:
         - Replace all 0 values with nan
@@ -239,7 +238,7 @@ class HandlingMissingValues:
         """
         #df_train, df_dev, df_test = self.load_train_dev_test()
         #df_train, df_dev, df_test = FeatureSelection(df_train, df_dev, df_test).select_features()
-        df_train, df_dev, df_test = self.drop_columns_and_rows_with_all_values_null()
+        df_train, df_dev, df_test = self.drop_columns_and_rows_with_all_values_null(df_train, df_dev, df_test)
         df_train, df_dev, df_test = self.replace_0_values_with_nan(df_train, df_dev, df_test)
         print ("filling all NAN with 0, in train dev and test sets .......................................................")
         df_train = df_train.fillna(0)
@@ -453,7 +452,7 @@ def run_training_data_processing_pipeline(df, save_final_data=True):
     logging.info("############################# Running training data processing pipeline #############################")
     df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
     df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)       # TODO: Undash this part after experiments          
-    df_train, df_dev, df_test = HandlingMissingValues(df_train, df_dev, df_test).run_handling_missing_values(save_final_data = False)
+    df_train, df_dev, df_test = HandlingMissingValues().run_handling_missing_values(df_train, df_dev, df_test, save_final_data = False)
     df_train, df_dev, df_test = HandlingDuplicatedValues().run_handling_duplicates(df_train, df_dev, df_test)
     df_train, df_dev, df_test = FeatureEncoding().run_feature_encoding(df_train, df_dev, df_test)
     x_train, y_train, x_dev, y_dev, x_test, y_test = DataSplitting().run_data_splitting(df_train, df_dev, df_test)
