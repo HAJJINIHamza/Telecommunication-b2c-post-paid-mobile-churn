@@ -304,7 +304,8 @@ class FeatureEncoding:
             "Forfaits 99 dhs": 2,
             "Forfaits Hors 99 dhs": 3
         }
-        df["gamme_encoded"] = df["gamme"].map(gamme_mapping).fillna(0).astype(int)
+        df["gamme"] = df["gamme"].map(gamme_mapping).fillna(0).astype(int)
+        df = df.rename(columns = {"gamme": "gamme_encoded"})
         logging.info("Encoded gamme feature successfully")
         return df
     
