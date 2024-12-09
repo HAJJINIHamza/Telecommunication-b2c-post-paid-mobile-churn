@@ -429,9 +429,7 @@ def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_
     -----------
     y_test : should be an array or list and not a dataframe
     """
-    #If ymax is none reset it to the number of scores
-    if ymax == None:
-        ymax = len(y_test)
+
     predicted_vector = pd.DataFrame({"y_test":y_test, "y_test_pred": y_test_pred, "y_test_predicted_prob":y_test_predicted_prob})
 
     mistakes = {"range":[], "nbr_mistakes":[], "nbr_correct":[]}
