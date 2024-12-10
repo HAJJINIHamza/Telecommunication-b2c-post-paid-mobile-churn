@@ -245,36 +245,60 @@ def plot_feature_importance(importance,names,model_type, max_n_features = None, 
     plt.ylabel('FEATURE NAMES')
 
 
-def report_model_performances(y_train, y_train_predicted,y_test, y_test_predicted, model_name=""):
+def report_model_performances(y_test, y_test_predicted, y_train=None, y_train_predicted=None, model_name="", details = True):
     """
-    Reports a model performance : accuracy, precision, recall and f1 score
+    Reports a model performance : accuracy, precision, recall, f1 score, confusion matrix ...
+    Parameters:
+    -----------
+    y_test, y_test_predicted, 
+    y_train=None, y_train_predicted=None could be none
+    model_name="", 
+    details = False : eiter or not to add confusion matrix of precision recall and f1 score for each class
     """
-    print ("                  train set      ||     test set")
-    print ("------------------------------------------------------------")
-    print (f"{model_name} accuracy    :", accuracy_score(y_train, y_train_predicted), " || ", accuracy_score(y_test, y_test_predicted) )
-    print (f"{model_name} precision   :", precision_score(y_train, y_train_predicted)," || ", precision_score(y_test, y_test_predicted))
-    print (f"{model_name} recall      :", recall_score(y_train, y_train_predicted),   " || ", recall_score(y_test, y_test_predicted))
-    print (f"{model_name} f1 score    :", f1_score(y_train, y_train_predicted),       " || ", f1_score(y_test, y_test_predicted))
-    print (f"-------------------------------------------------------------")
+    if y_train and y_train_predicted:
+        print ("                  train set      ||     test set")
+        print ("------------------------------------------------------------")
+        print (f"{model_name} accuracy      :", accuracy_score(y_train, y_train_predicted), " || ", accuracy_score(y_test, y_test_predicted) )
+        print (f"{model_name} precision     :", precision_score(y_train, y_train_predicted)," || ", precision_score(y_test, y_test_predicted))
+        print (f"{model_name} recall        :", recall_score(y_train, y_train_predicted),   " || ", recall_score(y_test, y_test_predicted))
+        print (f"{model_name} f1 score      :", f1_score(y_train, y_train_predicted),       " || ", f1_score(y_test, y_test_predicted))
+        print (f"{model_name} roc_auc_score :", roc_auc_score(y_train, y_train_predicted),  " || ", roc_auc_score(y_test, y_test_predicted))
+        print (f"-------------------------------------------------------------")
+    else :
+        print ("                  train set      ||     test set")
+        print ("------------------------------------------------------------")
+        print (f"{model_name} accuracy      :", accuracy_score(y_test, y_test_predicted) )
+        print (f"{model_name} precision     :", precision_score(y_test, y_test_predicted))
+        print (f"{model_name} recall        :", recall_score(y_test, y_test_predicted))
+        print (f"{model_name} f1 score      :", f1_score(y_test, y_test_predicted))
+        print (f"{model_name} roc_auc_score : {roc_auc_score(y_test, y_test_predicted)}")
+        print (f"-------------------------------------------------------------")
 
     matrice_confusion = confusion_matrix(y_test, y_test_predicted)
     sns.set_theme()
-    plt.figure(figsize=(4, 3))
-    sns.heatmap(matrice_confusion/np.sum(matrice_confusion), annot=True, cmap="Blues", fmt=".2%")
-    plt.title(f"Confusion matrix of model {model_name} on test data")
-    plt.xlabel("Predicted values")
-    plt.ylabel("Acctual values")
-    plt.show()
+    fig, axes = plt.subplots(nrows = 1, ncols=2, figsize=(5*2, 3))
+    axes = axes.flatten()
+    sns.heatmap(matrice_confusion/np.sum(matrice_confusion), annot=True, cmap="Blues", fmt=".2%", ax=axes[0])
+    sns.heatmap(matrice_confusion, annot=True, cmap="Blues", fmt="d", ax = axes[1])
+    plt.suptitle (f"CM of model {model_name} on test data")
+    axes[0].set_title(f"Confusion matrix %")
+    axes[1].set_title(f"Confusion matrix #")
+    axes[0].set_xlabel("Predicted values")
+    axes[0].set_ylabel("Acctual values")
+    axes[1].set_xlabel("Predicted values")
+    axes[1].set_ylabel("Acctual values")
+    fig.show()
 
-    metrics = {}
-    metrics["precision"] = [precision_score(y_test, y_test_predicted, pos_label=1), precision_score(y_test, y_test_predicted, pos_label=0)]
-    metrics["recall"] = [recall_score(y_test, y_test_predicted, pos_label=1), recall_score(y_test, y_test_predicted, pos_label=0)]
-    metrics["f1_score"] =[f1_score (y_test, y_test_predicted, pos_label=1), f1_score(y_test, y_test_predicted, pos_label=0)]
-    metrics = pd.DataFrame(metrics, index=["churners", "non_churners"])
-    plt.figure(figsize=(5, 3))
-    sns.heatmap(metrics, annot=True, cmap="Blues", fmt=".2%")
-    plt.title(f"Confusion matrix of model {model_name} per class")
-    plt.show()
+    if details == True:
+        metrics = {}
+        metrics["precision"] = [precision_score(y_test, y_test_predicted, pos_label=1), precision_score(y_test, y_test_predicted, pos_label=0)]
+        metrics["recall"] = [recall_score(y_test, y_test_predicted, pos_label=1), recall_score(y_test, y_test_predicted, pos_label=0)]
+        metrics["f1_score"] =[f1_score (y_test, y_test_predicted, pos_label=1), f1_score(y_test, y_test_predicted, pos_label=0)]
+        metrics = pd.DataFrame(metrics, index=["churners", "non_churners"])
+        plt.figure(figsize=(5, 3))
+        sns.heatmap(metrics, annot=True, cmap="Blues", fmt=".2%")
+        plt.title(f"Confusion matrix of model {model_name} per class")
+        plt.show()
 
 def vis_training_metric(eval_hist, eval_metric):
     """
@@ -422,12 +446,14 @@ def vis_data_distribution_of_acctual_and_predicted_target_with_tsne(x_test, y_te
     axes[1].set_title("Perplexity 120 TSNE data distribution of predicted target")
     plt.show()
 
-def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_prob, range = np.array(range(0, 10))*0.1, ymax = None):
+def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_prob, range = np.array(range(0, 10))*0.1, ymax = None, figsize=(10, 6)):
     """
     Plot the number of correctly predicted score and numebr of wrong predicted scores
     Parameters:
     -----------
-    y_test : should be an array or list and not a dataframe
+    y_test, y_test_pred, y_test_predicted_prob : should be an array or list and not a dataframe
+    range : range of scores or of probabilities
+    ymax : limit the yaxis from 0 to ymax
     """
 
     predicted_vector = pd.DataFrame({"y_test":y_test, "y_test_pred": y_test_pred, "y_test_predicted_prob":y_test_predicted_prob})
@@ -443,16 +469,21 @@ def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_
         mistakes["nbr_correct"].append(len(temporary_test_data["y_test"])-nbr_mistakes)
     mistakes = pd.DataFrame(mistakes)
 
-    mistakes_melted = pd.melt(mistakes, id_vars="range", value_vars=["nbr_mistakes", "nbr_correct"],
-                        var_name="Type", value_name="Count")
+    # Plot the stacked bar chart
+    plt.figure(figsize=figsize)
 
-    # Plot the bar plot
-    plt.figure(figsize=(10, 6))
-    sns.barplot(data=mistakes_melted, x="range", y="Count", hue="Type", palette=["red", "lightgreen"])
+    # Get the unique ranges
+    x = mistakes["range"]
+
+    # Plot "nbr_mistakes" bars
+    plt.bar(x, mistakes["nbr_mistakes"], label="Mistakes", color="red")
+
+    # Plot "nbr_correct" bars stacked on top of "nbr_mistakes"
+    plt.bar(x, mistakes["nbr_correct"], bottom=mistakes["nbr_mistakes"],  label="Correct", color="lightgreen")
 
     # Add labels and title
     plt.xlabel("Score ranges")
-    plt.ylabel("score_count")
+    plt.ylabel("Score count")
     plt.title("Number of mistakes and correct score predictions by range")
     plt.xticks(rotation=45)
     plt.ylim(0, ymax)
