@@ -446,7 +446,13 @@ def vis_data_distribution_of_acctual_and_predicted_target_with_tsne(x_test, y_te
     axes[1].set_title("Perplexity 120 TSNE data distribution of predicted target")
     plt.show()
 
-def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_prob, range = np.array(range(0, 10))*0.1, ymax = None, figsize=(10, 6)):
+def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, 
+                                          y_test_predicted_prob, 
+                                          range_ = None, 
+                                          ax = None, 
+                                          ymax = None, 
+                                          figsize=None,
+                                          title = ""):
     """
     Plot the number of correctly predicted score and numebr of wrong predicted scores
     Parameters:
@@ -455,11 +461,13 @@ def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_
     range : range of scores or of probabilities
     ymax : limit the yaxis from 0 to ymax
     """
+    if range_ is None:
+        range_ = np.array(range(0, 10))*0.1
 
     predicted_vector = pd.DataFrame({"y_test":y_test, "y_test_pred": y_test_pred, "y_test_predicted_prob":y_test_predicted_prob})
 
     mistakes = {"range":[], "nbr_mistakes":[], "nbr_correct":[]}
-    for element in range:
+    for element in range_:
         element = round(element, 2)
         # TODO: if element+0.1 == 1 insure value 1 is also included, for now score 1 doesn't exist
         temporary_test_data = predicted_vector [(predicted_vector["y_test_predicted_prob"] < element+0.1) & (predicted_vector["y_test_predicted_prob"] >= element)]
@@ -469,29 +477,27 @@ def vis_count_mistakes_and_correct_scores(y_test, y_test_pred, y_test_predicted_
         mistakes["nbr_correct"].append(len(temporary_test_data["y_test"])-nbr_mistakes)
     mistakes = pd.DataFrame(mistakes)
 
-    # Plot the stacked bar chart
-    plt.figure(figsize=figsize)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
 
     # Get the unique ranges
     x = mistakes["range"]
 
     # Plot "nbr_mistakes" bars
-    plt.bar(x, mistakes["nbr_mistakes"], label="Mistakes", color="red")
+    ax.bar(x, mistakes["nbr_mistakes"], label="Mistakes", color="red")
 
     # Plot "nbr_correct" bars stacked on top of "nbr_mistakes"
-    plt.bar(x, mistakes["nbr_correct"], bottom=mistakes["nbr_mistakes"],  label="Correct", color="lightgreen")
+    ax.bar(x, mistakes["nbr_correct"], bottom=mistakes["nbr_mistakes"],  label="Correct", color="lightgreen")
 
     # Add labels and title
-    plt.xlabel("Score ranges")
-    plt.ylabel("Score count")
-    plt.title("Number of mistakes and correct score predictions by range")
-    plt.xticks(rotation=45)
-    plt.ylim(0, ymax)
-    plt.legend(title="Type")
-    plt.tight_layout()
+    ax.set_xlabel("Score ranges")
+    ax.set_ylabel("Score count")
+    ax.set_title("Number of mistakes and correct score predictions by range")
+    ax.tick_params(axis="x", rotation=45)
+    ax.set_ylim(0, ymax)
+    ax.legend(title=title)
 
-    # Show the plot
-    plt.show()
+    return ax
     
 
 class columnsFamilies:
