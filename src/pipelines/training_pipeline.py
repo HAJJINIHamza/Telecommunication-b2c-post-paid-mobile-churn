@@ -117,7 +117,9 @@ class TrainingPipeline():
         y_train_pred = [int(y_train_predicted_prob[i]>THRESHOLD) for i in range(len(y_train_predicted_prob))]
         logging.info("Computing predictions on test data for evaluation")
         print ("Reporting model performance ...............................................")
-        utils.report_model_performances(y_train, y_train_pred, y_test, y_test_pred, model_name = "xgboost")
+        utils.report_model_performances(y_test= y_test, y_test_predicted= y_test_pred, 
+                                        y_train= y_train, y_train_predicted= y_train_pred, 
+                                        model_name = "xgboost")
 
         print ("Plot roc curve")
         utils.vis_roc_curve(y_test, y_test_predicted_prob)

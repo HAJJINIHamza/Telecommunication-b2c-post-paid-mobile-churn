@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import sys
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from datetime import datetime
 import pickle
 import ast
@@ -32,8 +33,8 @@ class DataTransformation:
             max_nbr_of_non_churners = len (self.df[self.df["churn_segment"].isin(["non_churners"])])
             max_nbr_of_inactif_churners = len (self.df[self.df["churn_segment"].isin(["inactif_unknown_churners"])])
             max_nbr_of_churn_operateur = len (self.df[self.df["churn_segment"].isin(["churn_operateur_actif"])])
-            nbr_non_churners = min(243000, max_nbr_of_non_churners)
-            nbr_inactif_churners = min (233097, max_nbr_of_inactif_churners)
+            nbr_non_churners = min(110000, max_nbr_of_non_churners)
+            nbr_inactif_churners = min (100000, max_nbr_of_inactif_churners)
             nbr_churn_operateur = min(10602, max_nbr_of_churn_operateur)
 
             print ("Sampling data based on churn segement .......................................................")
@@ -69,7 +70,7 @@ class DataTransformation:
     #Train test split 
     def get_train_dev_test_sets(self, df:pd.DataFrame):
         print ("Train, dev and test Spliting .......................................................")
-        df_train, df_dev = train_test_split(df, train_size = 0.89, random_state = 42, shuffle = True, stratify = df["churn"] )
+        df_train, df_dev = train_test_split(df, train_size = 0.80, random_state = 42, shuffle = True, stratify = df["churn"] )
         df_dev, df_test  = train_test_split(df_dev, train_size = 0.7, random_state = 42, shuffle = True, stratify = df_dev["churn"])
 
         #Take only a sample of test and train data
@@ -93,6 +94,20 @@ class DataTransformation:
 
         return df_train, df_dev, df_test 
     
+    def drop_non_churners(self,nbr_of_non_churners_to_drop, df ):
+        """
+        FUNCTION MEANT FOR EXPERIMENTATIONS :
+        Drops a nbr_of_non_churners_to_drop of non churners to keep advantage number of churners
+        """
+        #!!!!! Delete some non churners from the training data for better training
+        nbr_of_non_churners_to_drop = 80000            # NOTE: This part will drop the given number on non churners from training data
+        print(f"Drop {nbr_of_non_churners_to_drop} rows of non_churners from df .......................................................")
+        indexes_to_be_deleted = df[df['churn'] == 0].index[:nbr_of_non_churners_to_drop]
+        indexes = df.index.difference (indexes_to_be_deleted)
+        df = df.loc[indexes]
+        logging.info(f"Drop {nbr_of_non_churners_to_drop} rows of non_churners from df")
+        return df
+    
     def run_data_transformation(self):
         """
         Run transformation pipeline
@@ -103,15 +118,56 @@ class DataTransformation:
         df = self.get_churn_target_from_churn_segment(df)
         df_train, df_dev, df_test = self.get_train_dev_test_sets(df)
         #save_train_dev_test_sets(df_train, df_dev, df_test)    #For now don't save at this point
-        #!!!!! Delete some non churners from the training data for better training
-        nbr_of_non_churners_to_drop = 80000            # NOTE: This part will drop the given number on non churners from training data
-        print(f"Drop {nbr_of_non_churners_to_drop} rows of non_churners from df_train .......................................................")
-        indexes_to_be_deleted = df_train[df_train['churn'] == 0].index[:nbr_of_non_churners_to_drop]
-        indexes = df_train.index.difference (indexes_to_be_deleted)
-        df_train = df_train.loc[indexes]
-        logging.info(f"Drop {nbr_of_non_churners_to_drop} rows of non_churners from df_train")
+
         return df_train, df_dev, df_test
 #END OF CLASS
+class FeatureEngineering:
+    def __init__(self):
+        pass
+    
+    def get_customer_tenure (self, churn_dates_column, activation_dates_column):
+        """
+        Computes customer tenure starting as churn date - activation date
+
+        Returns : list_tenure, missing_dates 
+
+        Parameters :
+        ------------
+        churn_dates_column : column, example : df["churn_date"] 
+        activation_dates_column : column, example df["activation_bscs_date"]
+        """
+        list_tenure = []
+        missing_dates = 0
+        print ("Computing customer tenur")
+        for i in range (len(churn_dates_column)):
+            activation_date = activation_dates_column.iloc[i]
+            churn_date = churn_dates_column.iloc[i]
+            #if activation date is not "0" or 0 or unsupported value try this
+            try:
+                tenure = pd.to_datetime(churn_date) - pd.to_datetime(activation_date)
+                list_tenure.append(tenure.days)
+            #elif activation date contain a strange value other than a date to this 
+            except:
+                missing_dates += 1
+                list_tenure.append(0)
+        logging.info("Computed customer tenure successfully")
+        return list_tenure, missing_dates
+    
+    def run_feature_engineering (self, df_train, df_dev, df_test, current_date):
+        """
+        Adds customer tenure to train, dev and test sets
+
+        Returns: df_train, df_dev, df_test
+        """
+        print ("df_train")
+        df_train["tenure"], _ = self.get_customer_tenure(df_train["churn_date"], df_train["activation_bscs_date"])
+        print ("df_dev")
+        df_dev["tenure"], _ = self.get_customer_tenure(df_dev["churn_date"], df_dev["activation_bscs_date"])
+        print ("df_test")
+        df_test["tenure"], _ = self.get_customer_tenure(df_test["churn_date"], df_test["activation_bscs_date"])
+        print (f"Correlation between tenure and churn: {df_train.corr().loc["tenure", "churn"]}") 
+        return df_train, df_dev, df_test
+    
 
 class FeatureSelection:
     def __init__(self):
@@ -127,7 +183,8 @@ class FeatureSelection:
         # Séparer les colonnes en utilisant la virgule comme délimiteur
         feature_names_iter1 = feature_names.split(',')
         feature_names_iter1 = [col.strip() for col in feature_names_iter1]
-        df = df[feature_names_iter1]
+        feature_names_iter2 = feature_names_iter1 + ["tenure"]        #Added this part after adding tenure column in fearture engineering
+        df = df[feature_names_iter2]
         return df
     
     def select_inference_features(self, df):
@@ -138,6 +195,7 @@ class FeatureSelection:
         print ("Selecting inference featrues from df .......................................................")
         with open("models/ressources/2024-10-25_inference_feature_names.txt", "r") as f:
             feature_names = ast.literal_eval(f.read())
+        feature_names.append("tenure")    
         df_new = df[feature_names]
         logging.info("Selected inference features from df")
         return df_new
@@ -304,8 +362,9 @@ class FeatureEncoding:
             "Forfaits 99 dhs": 2,
             "Forfaits Hors 99 dhs": 3
         }
-        df["gamme"] = df["gamme"].map(gamme_mapping).fillna(0).astype(int)
-        df = df.rename(columns = {"gamme": "gamme_encoded"})
+        df["gamme_encoded"] = df["gamme"].map(gamme_mapping).fillna(0).astype(int)
+        df = df.drop(columns = ["gamme"])
+        #df = df.rename(columns = {"gamme": "gamme_encoded"})
         logging.info("Encoded gamme feature successfully")
         return df
     
@@ -357,14 +416,31 @@ class DataNormalization:
     def __init__(self):
         pass
     
-    def normalize_data(self, df):
+    def normalize_data(self, df,  config, processor_name=None,):
         """
         Normalize dataframe using stored standard scaler
+
+        Parameters:
+        ----------
+        df : DataFrame
+        processor_name : str : processor to use for normalization, must be passed if config is inference, 
+                         example: 2024-10-22_standard_scaler
+        config : str: should be either train or inference
         """
         print ("Normalizing data .......................................................")
-        #load normalizer
-        with open("models/processors/2024-10-22_standard_scaler.pkl", "rb") as f:
-            standard_scaler = pickle.load(f)  
+        if config == "inference":
+            #load normalizer
+            print (f"config is {config}. Loading pretrained standard scaler: {processor_name}")
+            with open(f"models/processors/{processor_name}.pkl", "rb") as f:
+                standard_scaler = pickle.load(f)  
+
+        elif config == "train":
+            #Fit a new standard scaler
+            print (f"config is {config}. fitting a new standard scaler")
+            standard_scaler = StandardScaler().fit(df)      #TODO: Hamza don't forget: the standard scaler should be saved for later usage 
+
+        else :
+            raise ValueError("Invalid config, config should be one of these : train, inference")
         #Normalize
         #Transform data sets
         df_norm = standard_scaler.transform(df)
@@ -372,7 +448,7 @@ class DataNormalization:
         logging.info("Normalized data")
         return df_norm
 
-    def run_data_normalization(self, x_train, x_dev, x_test, save_final_data = True):
+    def run_data_normalization(self, x_train, x_dev, x_test, save_final_data, config = "train"):
         """
         Run normalization on x_train, x_dev and x_test
 
@@ -383,11 +459,11 @@ class DataNormalization:
         save_final_data : Boolean, save or not the final output data
         """
         print ("x_train.......................................................")
-        x_train_norm = self.normalize_data(x_train)
+        x_train_norm = self.normalize_data(x_train, config= config)
         print ("x_dev.......................................................")
-        x_dev_norm = self.normalize_data(x_dev)
+        x_dev_norm = self.normalize_data(x_dev, config=config)
         print ("x_test.......................................................")
-        x_test_norm = self.normalize_data(x_test)
+        x_test_norm = self.normalize_data(x_test, config=config)
         logging.info("Successfully normalized x_train, x_dev, x_test")
         if save_final_data == True:
             print ("Saving x_train_norm.......................................................")
@@ -438,7 +514,7 @@ def drop_df_null_columns(df, threshold = 99):
     return df
 #######################################################################################################################
 
-def run_training_data_processing_pipeline(df, save_final_data=True):
+def run_training_data_processing_pipeline(df, current_date = date_time, save_final_data=True):
     """
     Applies these steps on df:
     - Data Transformation
@@ -452,25 +528,29 @@ def run_training_data_processing_pipeline(df, save_final_data=True):
     """
     logging.info("############################# Running training data processing pipeline #############################")
     df_train, df_dev, df_test = DataTransformation(df).run_data_transformation()
-    df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)       # TODO: Undash this part after experiments          
+    df_train, df_dev, df_test = FeatureEngineering().run_feature_engineering(df_train, df_dev, df_test, current_date)
+    df_train, df_dev, df_test = FeatureSelection().run_feature_selection(df_train, df_dev, df_test)             
     df_train, df_dev, df_test = HandlingMissingValues().run_handling_missing_values(df_train, df_dev, df_test, save_final_data = False)
     df_train, df_dev, df_test = HandlingDuplicatedValues().run_handling_duplicates(df_train, df_dev, df_test)
     df_train, df_dev, df_test = FeatureEncoding().run_feature_encoding(df_train, df_dev, df_test)
     x_train, y_train, x_dev, y_dev, x_test, y_test = DataSplitting().run_data_splitting(df_train, df_dev, df_test)
-    print ("Saving y_train.......................................................")
-    y_train.to_csv(f"{x_y_sets_path}/{date_time}_y_train.csv", index=True)
-    print ("Saving y_dev.......................................................")
-    y_dev.to_csv(f"{x_y_sets_path}/{date_time}_y_dev.csv", index=True)
-    print ("Saving y_test.......................................................")
-    y_test.to_csv(f"{x_y_sets_path}/{date_time}_y_test.csv", index=True)
-    logging.info("Saved y_train, y_dev and y_test")
+
+    if save_final_data==True:
+        print ("Saving y_train.......................................................")
+        y_train.to_csv(f"{x_y_sets_path}/{date_time}_y_train.csv", index=True)
+        print ("Saving y_dev.......................................................")
+        y_dev.to_csv(f"{x_y_sets_path}/{date_time}_y_dev.csv", index=True)
+        print ("Saving y_test.......................................................")
+        y_test.to_csv(f"{x_y_sets_path}/{date_time}_y_test.csv", index=True)
+        logging.info("Saved y_train, y_dev and y_test")
 
     nbr_rows_with_only_zeros = (x_train == 0).all(axis=1).sum()
     print (f"Nbr of rows with only zeros is : {nbr_rows_with_only_zeros}")
     logging.info(f"Nbr of rows with only zeros is : {nbr_rows_with_only_zeros}")
 
-    x_train_norm, x_dev_norm, x_test_norm = DataNormalization().run_data_normalization(x_train, x_dev, x_test, save_final_data=save_final_data) # TODO: Undash this part after experiments 
-    return x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test           # TODO: Undash this part after experiments 
+    x_train_norm, x_dev_norm, x_test_norm = DataNormalization().run_data_normalization(x_train, x_dev, x_test, save_final_data=save_final_data) 
+    #TODO: if an error occured in data normalization make sure that the columns are in the right order: ..., tenure, gamme_encoded
+    return x_train_norm, y_train, x_dev_norm, y_dev, x_test_norm, y_test           
 
 
 
@@ -482,7 +562,7 @@ def run_inference_data_processing_pipeline(df, batch_date):
     - Fill all nan values with 0
     - Encode features
     - Normalize data
-    - Saved inference data with dns
+    - Save inference data with dns
 
     Returns df_norm, dns
     """
@@ -490,8 +570,10 @@ def run_inference_data_processing_pipeline(df, batch_date):
     print ("Extracting dns list from df .......................................................")
     dns = df[['dn']]
     logging.info("Extracted dns from df")
-
-    df = FeatureSelection().select_inference_features(df)
+    
+    df["tenure"], missing_dates = FeatureEngineering().get_customer_tenure(df["churn_date"], df["activation_bscs_date"])
+    print (f"Number of missing dates when caculating tenure is {missing_dates}")
+    df = FeatureSelection().select_inference_features(df)   
 
     print ("Filling nan values with 0 .......................................................")
     df = df.fillna(0)
@@ -499,7 +581,7 @@ def run_inference_data_processing_pipeline(df, batch_date):
 
     print (f"Total number of missing values in df_train after filling all nan with 0 is : {df.isna().sum().sum()} ............................................")
     df = FeatureEncoding().gamme_encoding(df)
-    df_norm = DataNormalization().normalize_data(df)
+    df_norm = DataNormalization().normalize_data(df, processor_name="2024-12-23_standard_scaler_with_tenure", config="inference")
     print ("Saving inference data with dns .......................................................")
 
     df_norm.to_csv(f"data/inference_data/{batch_date}_x_norm.csv", index=True)
@@ -508,7 +590,7 @@ def run_inference_data_processing_pipeline(df, batch_date):
     return df_norm, dns
 
 
-#TODO : Retest run_training_data_processing_pipeline()
+#TODO : feature engineering, data normalization - standard scaler, saving = True or False
 
     
 

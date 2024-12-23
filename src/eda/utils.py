@@ -255,24 +255,25 @@ def report_model_performances(y_test, y_test_predicted, y_train=None, y_train_pr
     model_name="", 
     details = False : eiter or not to add confusion matrix of precision recall and f1 score for each class
     """
-    if y_train and y_train_predicted:
+    if y_train is not None and y_train_predicted is not None:
         print ("                  train set      ||     test set")
         print ("------------------------------------------------------------")
         print (f"{model_name} accuracy      :", accuracy_score(y_train, y_train_predicted), " || ", accuracy_score(y_test, y_test_predicted) )
         print (f"{model_name} precision     :", precision_score(y_train, y_train_predicted)," || ", precision_score(y_test, y_test_predicted))
         print (f"{model_name} recall        :", recall_score(y_train, y_train_predicted),   " || ", recall_score(y_test, y_test_predicted))
         print (f"{model_name} f1 score      :", f1_score(y_train, y_train_predicted),       " || ", f1_score(y_test, y_test_predicted))
-        print (f"{model_name} roc_auc_score :", roc_auc_score(y_train, y_train_predicted),  " || ", roc_auc_score(y_test, y_test_predicted))
+        #print (f"{model_name} roc_auc_score :", roc_auc_score(y_train, y_train_predicted),  " || ", roc_auc_score(y_test, y_test_predicted))
         print (f"-------------------------------------------------------------")
+
     else :
-        print ("                  train set      ||     test set")
+        print ("           test set         ")
         print ("------------------------------------------------------------")
         print (f"{model_name} accuracy      :", accuracy_score(y_test, y_test_predicted) )
         print (f"{model_name} precision     :", precision_score(y_test, y_test_predicted))
         print (f"{model_name} recall        :", recall_score(y_test, y_test_predicted))
         print (f"{model_name} f1 score      :", f1_score(y_test, y_test_predicted))
         print (f"{model_name} roc_auc_score : {roc_auc_score(y_test, y_test_predicted)}")
-        print (f"-------------------------------------------------------------")
+        print (f"-------------------------------------------------------------")        
 
     matrice_confusion = confusion_matrix(y_test, y_test_predicted)
     sns.set_theme()
