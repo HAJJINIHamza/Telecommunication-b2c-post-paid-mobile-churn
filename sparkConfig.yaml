@@ -1,0 +1,9 @@
+spark_bcppmchurn:
+  app_name: bcppmchurn
+  master: yarn
+  deploy_mode: client
+  driver_memory: 16g
+  executor_memory: 16g
+  queue: root.dtddds_group
+  spark_home: "/opt/cloudera/parcels/CDH/lib/spark/"
+  python_path: "/opt/cloudera/parcels/Anaconda/envs/py36/bin/python"
