@@ -100,7 +100,7 @@ Follow these instructions to use this project:
 
 1. Clone the project
 ```
-git clone git@sandbox1.inwi.lan:datateamprojects/bcppmchurn.git
+git clone git@...
 ```
 2. Create a virtual environnement 
 3. Install necessary libraries 
@@ -167,8 +167,6 @@ python3 src/pipelines/training_pipeline.py
 Use backtesting to compare model scores (extracted the first of every month), with real data.
 We do backtesting on observed data of the 18th or 30th of the month (You can do other dates).
 
-To conduct backtesting, first, download real data, it's the target table generated at date (18th or 30th), (follow this documentation on how to generate this table : https://inwidtd.atlassian.net/wiki/spaces/DataLab/pages/1062338584/SCORING+Inference+pipeline#1.1.-Generate-target-table-%3A). When you generate the table, it will be stored in impala, next download it in `bcppmchurn/data/real_data`.
-
-Secondly, simply copy past the `12_backtesting_20250201.ipynb` notebook, modify its name to 12_backtestin_{date}. Change the `data_date` variable, than run the notebook blocks.
+Simply copy past the `12_backtesting_20250201.ipynb` notebook, modify its name to 12_backtestin_{date}. Change the `data_date` variable, than run the notebook blocks.
 
 
